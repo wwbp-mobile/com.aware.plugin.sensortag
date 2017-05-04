@@ -47,9 +47,6 @@ public class Plugin extends Aware_Plugin {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
-        bleDevicePicker = new BLEDevicePicker();
-        bleDevicePicker.execute();
-
         if (PERMISSIONS_OK) {
 
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
@@ -59,6 +56,9 @@ public class Plugin extends Aware_Plugin {
 
             //Initialise AWARE instance in plugin
             Aware.startAWARE(this);
+
+            bleDevicePicker = new BLEDevicePicker();
+            bleDevicePicker.execute();
         }
 
         return START_STICKY;
@@ -80,6 +80,9 @@ public class Plugin extends Aware_Plugin {
             super.onPostExecute(result);
             if (!result) {
                 Toast.makeText(getApplicationContext(), "Failed to find devices", Toast.LENGTH_SHORT)
+                        .show();
+            } else {
+                Toast.makeText(getApplicationContext(), "Connected to Sensor", Toast.LENGTH_SHORT)
                         .show();
             }
         }
