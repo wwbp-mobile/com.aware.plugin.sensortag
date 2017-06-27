@@ -4,13 +4,16 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -19,12 +22,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 
 public class DevicePicker extends AppCompatActivity {
 
@@ -38,6 +43,10 @@ public class DevicePicker extends AppCompatActivity {
     private ScanSettings settings;
     private List<ScanFilter> filters;
     private BluetoothGatt mGatt;
+    private BluetoothGattService mMovService;
+    private BluetoothGattCharacteristic mRead, mEnable, mPeriod;
+    private LinkedList<Measurement> mRecording;
+    private Calendar previousRead;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,7 +71,7 @@ public class DevicePicker extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if(mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
-            Intent enableBluetoothIntent = new Intent((mBluetoothAdapter.));
+            Intent enableBluetoothIntent = new Intent((mBluetoothAdapter.ACTION_REQUEST_ENABLE));
             startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BT);
         } else {
             if (Build.VERSION.SDK_INT >= 21) {
@@ -111,7 +120,7 @@ public class DevicePicker extends AppCompatActivity {
             }, SCAN_PERIOD);
 
             if (Build.VERSION.SDK_INT < 21) {
-                mBluetoothAdapter.startLeScan(mLeScanCallback)
+                mBluetoothAdapter.startLeScan(mLeScanCallback);
             } else {
                 mLEScanner.startScan(filters, settings, mScanCallback);
             }
@@ -149,18 +158,132 @@ public class DevicePicker extends AppCompatActivity {
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
                 @Override
-                public void onLeScan(BluetoothDevice bluetoothDevice, int i, byte[] bytes) {
+                public void onLeScan(final BluetoothDevice bluetoothDevice, int i, byte[] bytes) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            Log.i("onLeScan", )
+                            Log.i("onLeScan", bluetoothDevice.toString());
+                            connectToDevice(bluetoothDevice);
                         }
                     });
                 }
-            }
+            };
 
+    // TODO CHANGE TO RETRIEVE LIST OF DEVICES AND CONNECT TO THE ONE WITH THE RIGHT MAC ADDRESS
+    public void connectToDevice(BluetoothDevice bluetoothDevice) {
+        if(mGatt == null && bluetoothDevice.getAddress().equals("A0:E6:F8:AE:36:02")) {
+            Log.i("MAC ADDRESS", bluetoothDevice.getAddress());
+            mGatt = bluetoothDevice.connectGatt(this, false, gattCallback);
+            scanLeDevice(false);
+        }
 
     }
+
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        double result [];
+        Calendar currentTime;
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            Log.i("onConnectionStateChange", "Status: " + status);
+            switch (newState) {
+                case BluetoothProfile.STATE_CONNECTED:
+                    gatt.discoverServices();
+                    break;
+                case BluetoothProfile.STATE_DISCONNECTED:
+                    break;
+                default:
+                    Log.e("gattCallback", "STATE_OTHER");
+            }
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            super.onServicesDiscovered(gatt, status);
+            mMovService = mGatt.getService(UUID.fromString("F000AA80-0451-4000-B000-000000000000"));
+            mEnable = mMovService.getCharacteristic(UUID.fromString("F000AA82-0451-4000-B000-000000000000"));
+            mEnable.setValue(0b1000111000, BluetoothGattCharacteristic.FORMAT_UINT16, 0);
+            mGatt.writeCharacteristic(mEnable);
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicWrite(gatt, characteristic, status);
+            if (characteristic == mEnable) {
+                mPeriod = mMovService.getCharacteristic(UUID.fromString("F000AA83-0451-4000-B000-000000000000"));
+                mPeriod.setValue(0x0A, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
+                mGatt.writeCharacteristic(mPeriod);
+            } else if (characteristic == mPeriod) {
+                mRead = mMovService.getCharacteristic(UUID.fromString("F000AA81-0451-4000-B000-000000000000"));
+                previousRead = Calendar.getInstance();
+                mGatt.readCharacteristic(mRead);
+                deviceConnected();
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicRead(gatt, characteristic, status);
+            result = Util.convertAccel(characteristic.getValue());
+            Log.i("X", String.valueOf(result[0]));
+            Log.i("Y", String.valueOf(result[1]));
+            Log.d("Z", String.valueOf(result[2]));
+            currentTime = Calendar.getInstance();
+            long diff = currentTime.getTimeInMillis() - previousRead.getTimeInMillis();
+            if (diff < 100) {
+                try {
+                    Thread.sleep(100-diff);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            previousRead = Calendar.getInstance();
+            mGatt.readCharacteristic(mRead);
+
+        }
+
+
+    };
+
+    private void deviceConnected() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                boolean hasConnection = true;
+                while (hasConnection) {
+                    long timeDiff = Calendar.getInstance().getTimeInMillis() - previousRead.getTimeInMillis();
+                    if (timeDiff > 2000) {
+                        hasConnection = false;
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }).start();
+    }
+
+
+
+    /*private void displayGattServices(List<BluetoothGattService> services) {
+        if (services == null) {
+            return;
+        }
+
+        String uuid = null;
+
+        ArrayList<HashMap<String, String>> gattServiceData
+                = new ArrayList<HashMap<String, String>>();
+        ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
+                = new ArrayList<ArrayList<HashMap<String, String>>>();
+        ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics
+                = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+
+        for ()
+    }*
+
 
     @Override
     protected void onDestroy() {
@@ -174,7 +297,8 @@ public class DevicePicker extends AppCompatActivity {
     }
 
 
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+
+    /*private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -189,5 +313,5 @@ public class DevicePicker extends AppCompatActivity {
 
             }
         }
-    };
+    };*/
 }
