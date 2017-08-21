@@ -7,34 +7,33 @@ package com.aware.plugin.fitbit;
 public class Measurement {
     private double x, y, z;
 
-    private String time;
-
-    public Measurement(double x, double y, double z, String time) {
+    /**
+     * @param x
+     * @param y
+     * @param z
+     */
+    Measurement(double x, double y, double z) {
 
         this.x = x;
         this.y = y;
         this.z = z;
-        this.time = time;
 
     }
 
-    public double getCombined() {
+    double getCombined() {
         return Math.sqrt(x*x + y*y + z*z);
     }
 
-    public double getX () {
+    double getX() {
         return x;
     }
 
-    public double getY () {
+    double getY () {
         return y;
     }
 
-    public double getZ() {
+    double getZ() {
         return z;
     }
 
-    public String getTime() {
-        return time;
-    }
 }
