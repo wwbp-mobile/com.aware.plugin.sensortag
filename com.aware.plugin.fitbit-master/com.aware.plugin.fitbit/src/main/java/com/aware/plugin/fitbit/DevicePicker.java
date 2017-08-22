@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -27,7 +28,6 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,9 +43,8 @@ public class DevicePicker extends AppCompatActivity {
     private ScanSettings settings;
     private List<ScanFilter> filters;
     private BluetoothGatt mGatt;
-    private BluetoothGattService mMovService;
+    private List<BluetoothGattService> mServiceList;
     private BluetoothGattCharacteristic mRead, mEnable, mPeriod;
-    private LinkedList<Measurement> mRecording;
     private Calendar previousRead;
 
     @Override
@@ -180,7 +179,7 @@ public class DevicePicker extends AppCompatActivity {
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
-        double result [];
+        byte result [];
         Calendar currentTime;
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -199,35 +198,64 @@ public class DevicePicker extends AppCompatActivity {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             super.onServicesDiscovered(gatt, status);
-            mMovService = mGatt.getService(UUID.fromString("F000AA80-0451-4000-B000-000000000000"));
-            mEnable = mMovService.getCharacteristic(UUID.fromString("F000AA82-0451-4000-B000-000000000000"));
-            mEnable.setValue(0b1000111000, BluetoothGattCharacteristic.FORMAT_UINT16, 0);
-            mGatt.writeCharacteristic(mEnable);
+            // GET ALL AVAILABLE SERVICES
+            mServiceList = mGatt.getServices();
+
+
+            // BUILD CHARACTERISTIC LIST
+            for (int serviceNum = 0; serviceNum < mServiceList.size(); serviceNum++) {
+                BluetoothGattService service = mServiceList.get(serviceNum);
+                // Get characteristics
+                List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+                String serviceUUID = service.getUuid().toString();
+
+                if (serviceUUID.compareTo(SensorTagGatt.UUID_IRT_SERV.toString()) == 0) {
+                    enableNotifications(service, SensorTagGatt.UUID_IRT_DATA);
+                    safeSleep();
+                    enableService(service, SensorTagGatt.UUID_IRT_CONF);
+                    safeSleep();
+                }
+
+                else if (serviceUUID.compareTo(SensorTagGatt.UUID_HUM_SERV.toString()) == 0) {
+                    enableNotifications(service, SensorTagGatt.UUID_HUM_DATA);
+                    safeSleep();
+                    enableService(service, SensorTagGatt.UUID_HUM_CONF);
+                    safeSleep();
+                }
+
+                else if (serviceUUID.compareTo(SensorTagGatt.UUID_OPT_SERV.toString()) == 0) {
+                    enableNotifications(service, SensorTagGatt.UUID_OPT_DATA);
+                    safeSleep();
+                    enableService(service, SensorTagGatt.UUID_OPT_CONF);
+                    safeSleep();
+                } else if (serviceUUID.compareTo(SensorTagGatt.UUID_BAR_SERV.toString()) == 0) {
+                    enableNotifications(service, SensorTagGatt.UUID_BAR_DATA);
+                    safeSleep();
+                    enableService(service, SensorTagGatt.UUID_BAR_CONF);
+                } else if (serviceUUID.compareTo(SensorTagGatt.UUID_MOV_SERV.toString()) == 0) {
+                    enableNotifications(service, SensorTagGatt.UUID_MOV_DATA);
+                    safeSleep();
+                    enableMotionService(service, SensorTagGatt.UUID_MOV_CONF, true);
+                    safeSleep();
+                }
+            }
+
         }
 
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
-            if (characteristic == mEnable) {
-                mPeriod = mMovService.getCharacteristic(UUID.fromString("F000AA83-0451-4000-B000-000000000000"));
-                mPeriod.setValue(0x0A, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
-                mGatt.writeCharacteristic(mPeriod);
-            } else if (characteristic == mPeriod) {
-                mRead = mMovService.getCharacteristic(UUID.fromString("F000AA81-0451-4000-B000-000000000000"));
-                previousRead = Calendar.getInstance();
-                mGatt.readCharacteristic(mRead);
-                deviceConnected();
-            }
+            gatt.readCharacteristic(characteristic);
         }
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicRead(gatt, characteristic, status);
-            result = Util.convertAccel(characteristic.getValue());
-            Log.i("X", String.valueOf(result[0]));
-            Log.i("Y", String.valueOf(result[1]));
-            Log.d("Z", String.valueOf(result[2]));
-            currentTime = Calendar.getInstance();
+            Log.i("Characteristic UUID:", characteristic.getUuid().toString());
+
+
+
+            /*currentTime = Calendar.getInstance();
             long diff = currentTime.getTimeInMillis() - previousRead.getTimeInMillis();
             if (diff < 100) {
                 try {
@@ -238,12 +266,52 @@ public class DevicePicker extends AppCompatActivity {
             }
 
             previousRead = Calendar.getInstance();
-            mGatt.readCharacteristic(mRead);
+            mGatt.readCharacteristic(mRead);*/
 
         }
 
 
     };
+
+    private void enableMotionService(BluetoothGattService service, UUID uuidMovConf, boolean bool) {
+        byte b[] = new byte[] {0x7F,0x00};
+        // 0x7F (hexadecimal) = 127 (decimal)
+        // 127 = 2^0 + 2^1 ... 2^6
+        // Enables all bits from 0-6
+
+        if (bool) {
+            b[0] = (byte)0xFF;  // Enables bit 7
+        }
+
+        BluetoothGattCharacteristic config = service.getCharacteristic(uuidMovConf);
+        config.setValue(b);
+        mGatt.writeCharacteristic(config);
+    }
+
+    private void enableNotifications(BluetoothGattService service, UUID uuidData) {
+        BluetoothGattCharacteristic dataCharacteristic = service.getCharacteristic(uuidData);
+        mGatt.setCharacteristicNotification(dataCharacteristic, true);
+
+        BluetoothGattDescriptor config = dataCharacteristic.getDescriptor(SensorTagGatt.UUID_NOTIFICATIONS);
+        config.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        mGatt.writeDescriptor(config);
+    }
+
+    private void safeSleep() {
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void enableService(BluetoothGattService service, UUID uuidConf) {
+        Log.i("Enabling:", uuidConf.toString());
+        BluetoothGattCharacteristic config = service.getCharacteristic(uuidConf);
+        config.setValue(new byte[] {1});
+        mGatt.writeCharacteristic(config);
+        Log.i("Enabled", uuidConf.toString());
+    }
 
     private void deviceConnected() {
         new Thread(new Runnable() {

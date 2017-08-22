@@ -4,8 +4,6 @@ package com.aware.plugin.fitbit;
  * Created by aayushchadha on 27/06/17.
  */
 
-import java.util.List;
-
 /**
  * Class with helper functions.
  */
@@ -52,7 +50,7 @@ public class Util {
      * @param recording the list of measurements
      * @return the CSV String representing the measurements
      */
-    public static String recordingToCSV(List<Measurement> recording) {
+    /*public static String recordingToCSV(List<Measurement> recording) {
         String csv = "time,x,y,z,combined\n";
         for (Measurement measurement : recording) {
             csv += measurement.getTime() + "," + measurement.getX()
@@ -60,5 +58,5 @@ public class Util {
                     + "," + measurement.getCombined() + "\n";
         }
         return csv;
-    }
+    }*/
 }
