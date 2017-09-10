@@ -12,6 +12,7 @@ import com.aware.utils.Aware_Plugin;
 public class Plugin extends Aware_Plugin {
 
     public static BLEDevicePicker bleDevicePicker = null;
+    private String[] TABLES_FIELDS;
 
     @Override
     public void onCreate() {
@@ -37,9 +38,9 @@ public class Plugin extends Aware_Plugin {
         //REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_COARSE_LOCATION);
 
         //To sync data to the server, you'll need to set this variables from your ContentProvider
-        DATABASE_TABLES = Provider.DATABASE_TABLES;
+        String[] DATABASE_TABLES = Provider.DATABASE_TABLES;
         TABLES_FIELDS = Provider.TABLES_FIELDS;
-        CONTEXT_URIS = new Uri[]{ Provider.TableOne_Data.CONTENT_URI }; //this syncs dummy TableOne_Data to server
+        Uri[] CONTEXT_URIS = new Uri[]{ Provider.TableOne_Data.CONTENT_URI }; //this syncs dummy TableOne_Data to server
     }
 
     //This function gets called every 5 minutes by AWARE to make sure this plugin is still running.
