@@ -40,7 +40,7 @@ public class Plugin extends Aware_Plugin {
         //To sync data to the server, you'll need to set this variables from your ContentProvider
         String[] DATABASE_TABLES = Provider.DATABASE_TABLES;
         TABLES_FIELDS = Provider.TABLES_FIELDS;
-        Uri[] CONTEXT_URIS = new Uri[]{ Provider.TableOne_Data.CONTENT_URI }; //this syncs dummy TableOne_Data to server
+        Uri[] CONTEXT_URIS = new Uri[]{ Provider.Sensor_Data.CONTENT_URI }; //this syncs dummy TableOne_Data to server
     }
 
     //This function gets called every 5 minutes by AWARE to make sure this plugin is still running.
