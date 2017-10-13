@@ -1,0 +1,1 @@
+include ':com.aware.plugin.sensortag', ':aware-core-release'
