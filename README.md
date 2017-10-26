@@ -1,26 +1,36 @@
-AWARE Plugin: Device Usage
+AWARE Plugin: SensorTag
 ==========================
 
-This plugin measures the device usage and non-usage sessions.
+This plugin receives data from the TI SensorTag.
 
 # Settings
 Parameters adjustable on the dashboard and client:
-- **status_plugin_device_usage**: (boolean) activate/deactivate plugin
+- **status_plugin_frequency_of_collection**: (integer) Data Collection Frequency (Default 10Hz)
 
 # Broadcasts
-**ACTION_AWARE_PLUGIN_DEVICE_USAGE**
+**ACTION_AWARE_PLUGIN_SENSORTAG**
+
 Broadcast as sessions toggle between usage-not usage, with the following extras:
-- **elapsed_device_off**: (double) amount of time turned off (milliseconds)
-- **elapsed_device_on**: (double) amount of time turned on (milliseconds)
+- **Sensor Name**: The sensor data was received from.
+- **Update Period**: The frequency.
+- **Unit**: The unit of the reading.
+- **Value**: The value obtained.
 
 # Providers
 ##  Device Usage Data
-> content://com.aware.plugin.device_usage.provider.device_usage/plugin_device_usage
+> content://com.aware.plugin.sensortag.provider.sensortag/sensortag
 
 Field | Type | Description
 ----- | ---- | -----------
 _id | INTEGER | primary key auto-incremented
 timestamp | REAL | unix timestamp in milliseconds of sample
 device_id | TEXT | AWARE device ID
-double_elapsed_device_on | REAL | amount of time the device was on (milliseconds)
-double_elapsed_device_off	| REAL | amount of time the device was off (milliseconds)
+update_period | TEXT | Frequency at which sensor collects data
+sensor| TEXT | One of Accelerometer, Gyro, Magnetometer, Humidity, Light or Pressure
+value | REAL | Value from the sensor
+unit | TEXT | Unit of the reading
+
+Sensor_Data.UPDATE_PERIOD + " text default ''," +
+                    Sensor_Data.SENSOR + " text default ''," +
+                    Sensor_Data.VALUE + " real default 0," +
+                    Sensor_Data.UNIT + " text default ''

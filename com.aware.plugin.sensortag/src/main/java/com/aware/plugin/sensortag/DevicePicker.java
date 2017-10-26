@@ -1,4 +1,4 @@
-/*
+/**
 * Created by: Aayush Chadha
 * Last Updated: 26th October 2017
 * Adapted from:
@@ -155,11 +155,11 @@ public class DevicePicker extends AppCompatActivity {
 
     }
 
-    /* Newer Android versions support this method for scanning for BLE Devices */
+    /** Newer Android versions support this method for scanning for BLE Devices */
     private ScanCallback mScanCallback = new ScanCallback() {
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         @Override
-        /*
+        /**
         onScanResult is called each time we see a device brodcasting. In order to prevent over
         populating the radio group view, we first check if the device is a BLE DEvice, and then
         check our hash set to see if we haven't already added it to the view and then finally check
@@ -192,7 +192,7 @@ public class DevicePicker extends AppCompatActivity {
         }
     };
 
-    /* Each new device obtained from the scan results is added to the Radio Group view here. We set
+    /** Each new device obtained from the scan results is added to the Radio Group view here. We set
        a listener to look for changed radio button values. But changing the selected device doesn't
        initiate the connectToDevice() function, for that, we set a listener to the
        SELECT DEVICE BUTTON.
@@ -272,7 +272,7 @@ public class DevicePicker extends AppCompatActivity {
             }
         }
 
-        /* Crux of the App. Before we can start receiving data from the sensor, we must send NOTIFY
+        /** Crux of the App. Before we can start receiving data from the sensor, we must send NOTIFY
         * requests to each of the sensors we are interested in. This will ensure we receive data
         * continuously. Post this request, we have to actually ENABLE the sensors to get them
         * started on transmitting the values. The catch however lies in the fact that Android
@@ -351,7 +351,7 @@ public class DevicePicker extends AppCompatActivity {
             Log.i("Characteristic written:", characteristic.getUuid().toString());
         }
 
-        /* We receive each of the sensor values here as a byte stream. These must be converted into
+        /** We receive each of the sensor values here as a byte stream. These must be converted into
         * human readable values. */
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
@@ -421,7 +421,7 @@ public class DevicePicker extends AppCompatActivity {
 
     }
 
-    /* We need to broadcast the values for them to be accessible by the plugin class. Trying a direct
+    /** We need to broadcast the values for them to be accessible by the plugin class. Trying a direct
     * insert from here throws a Permission Denied error. */
     private void insertIntoDatabase(Double time, Double period, String sensorname, Double reading, String unit) {
 
@@ -444,7 +444,7 @@ public class DevicePicker extends AppCompatActivity {
     }
 
 
-    /* Motion (Accelerometer/Gyro/Mag) service has a different structure to it and requires a
+    /** Motion (Accelerometer/Gyro/Mag) service has a different structure to it and requires a
        separate function to enable */
     private void enableMotionService(BluetoothGattService service, UUID uuidMovConf, boolean bool) {
         byte b[] = new byte[] {0x7F,0x00};

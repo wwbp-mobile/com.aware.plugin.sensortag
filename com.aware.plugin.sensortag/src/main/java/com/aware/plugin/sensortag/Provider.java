@@ -68,11 +68,13 @@ public class Provider extends ContentProvider {
     }
 
     //ContentProvider query indexes
+    private static final int SENSOR_TAG = 1;
+    private static final int SENSOR_TAG_ID = 2;
     private static final int DEVICE_USAGE = 1;
     private static final int DEVICE_USAGE_ID = 2;
 
     /**
-     * Database stored in external folder: /AWARE/plugin_device_usage.db
+     * Database stored in external folder: /AWARE/plugin_sensortag.db
      */
     public static final String DATABASE_NAME = "plugin_sensortag.db";
 
@@ -141,9 +143,9 @@ public class Provider extends ContentProvider {
     @Override
     public String getType(Uri uri) {
         switch (sUriMatcher.match(uri)) {
-            case DEVICE_USAGE:
+            case SENSOR_TAG:
                 return Sensor_Data.CONTENT_TYPE;
-            case DEVICE_USAGE_ID:
+            case SENSOR_TAG_ID:
                 return Sensor_Data.CONTENT_ITEM_TYPE;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -159,7 +161,7 @@ public class Provider extends ContentProvider {
         database.beginTransaction();
 
         switch (sUriMatcher.match(uri)) {
-            case DEVICE_USAGE:
+            case SENSOR_TAG:
                 long _id = database.insertWithOnConflict(DATABASE_TABLES[0],
                         Sensor_Data.DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
                 database.setTransactionSuccessful();
@@ -206,7 +208,7 @@ public class Provider extends ContentProvider {
 
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         switch (sUriMatcher.match(uri)) {
-            case DEVICE_USAGE:
+            case SENSOR_TAG:
                 qb.setTables(DATABASE_TABLES[0]);
                 qb.setProjectionMap(sensorDataHash);
                 break;
@@ -233,7 +235,7 @@ public class Provider extends ContentProvider {
 
         int count;
         switch (sUriMatcher.match(uri)) {
-            case DEVICE_USAGE:
+            case SENSOR_TAG:
                 count = database.update(DATABASE_TABLES[0], values, selection,
                         selectionArgs);
                 break;

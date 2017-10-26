@@ -2,7 +2,8 @@ package com.aware.plugin.sensortag;
 
 
 /**
- * Created by aayushchadha on 27/06/17.
+ * @author: aayush
+ * Written on: 27/06/17.
  */
 
 public class Measurement {

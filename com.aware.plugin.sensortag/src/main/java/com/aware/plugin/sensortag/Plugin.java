@@ -27,7 +27,7 @@ public class Plugin extends Aware_Plugin {
     /**
      * Broadcasted event: the user has turned on his phone
      */
-    public static final String ACTION_AWARE_PLUGIN_DEVICE_USAGE = "ACTION_AWARE_PLUGIN_DEVICE_USAGE";
+    public static final String ACTION_AWARE_PLUGIN_SENSORTAG = "ACTION_AWARE_PLUGIN_SENSORTAG";
 
     /**
      * Extra (double): how long was the phone OFF until the user turned it ON
@@ -53,7 +53,7 @@ public class Plugin extends Aware_Plugin {
 
         AUTHORITY = Provider.getAuthority(this);
 
-        TAG = "AWARE::Device Usage";
+        TAG = "AWARE::Sensor Tag";
 
         //Shares this plugin's context to AWARE and applications
         CONTEXT_PRODUCER = new ContextProducer() {
@@ -72,11 +72,10 @@ public class Plugin extends Aware_Plugin {
                 //insert data to device usage table
                 getContentResolver().insert(Provider.Sensor_Data.CONTENT_URI, context_data);
 
-                Intent sharedContext = new Intent(ACTION_AWARE_PLUGIN_DEVICE_USAGE);
+                Intent sharedContext = new Intent(ACTION_AWARE_PLUGIN_SENSORTAG);
                 sharedContext.putExtra(SENSOR, sensor);
                 sharedContext.putExtra(UPDATE_PERIOD, update_period);
                 sharedContext.putExtra(UNIT, unit);
-                sharedContext.putExtra(UPDATE_PERIOD, update_period);
                 sharedContext.putExtra(VALUE, value);
                 sendBroadcast(sharedContext);
             }
