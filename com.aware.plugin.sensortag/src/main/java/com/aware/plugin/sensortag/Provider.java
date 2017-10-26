@@ -1,6 +1,7 @@
 /**
  * @author: denzil
  */
+// TODO REMOVE REDUNDANT CODE FOR THE DEVICE PICKER BUTTON THAT DOESN"T FUNCTION
 package com.aware.plugin.sensortag;
 
 import android.content.ContentProvider;

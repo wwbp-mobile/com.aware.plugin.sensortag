@@ -1,9 +1,5 @@
 package com.aware.plugin.sensortag;
 
-/**
- * Created by aayushchadha on 03/10/17.
- */
-
 import android.bluetooth.BluetoothGattCharacteristic;
 
 import java.util.UUID;

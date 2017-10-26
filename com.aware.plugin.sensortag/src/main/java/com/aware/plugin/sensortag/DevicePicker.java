@@ -2,10 +2,10 @@
 * Created by: Aayush Chadha
 * Last Updated: 26th October 2017
 * Adapted from:
-* Denzil Ferriera's AWARE Template:
-*   https://github.com/denzilferreira/aware-plugin-template
-* Denzil Ferriera's Device Usage Plugin:
-*   https://github.com/denzilferreira/com.aware.plugin.device_usage
+* 1) https://github.com/denzilferreira/aware-plugin-template
+* 2) https://github.com/denzilferreira/com.aware.plugin.device_usage
+* 3) https://github.com/denzilferreira/com.aware.plugin.fitbit
+*
 * */
 package com.aware.plugin.sensortag;
 
@@ -83,7 +83,6 @@ public class DevicePicker extends AppCompatActivity {
 
         final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(
                 Context.BLUETOOTH_SERVICE);
-        //mDevicesListView = (ListView) findViewById(R.id.devices_available_to_connect);
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
@@ -156,9 +155,16 @@ public class DevicePicker extends AppCompatActivity {
 
     }
 
+    /* Newer Android versions support this method for scanning for BLE Devices */
     private ScanCallback mScanCallback = new ScanCallback() {
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         @Override
+        /*
+        onScanResult is called each time we see a device brodcasting. In order to prevent over
+        populating the radio group view, we first check if the device is a BLE DEvice, and then
+        check our hash set to see if we haven't already added it to the view and then finally check
+        if the device is indeed a SensorTag.
+         */
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
             BluetoothDevice bleDevice = result.getDevice();
@@ -166,9 +172,10 @@ public class DevicePicker extends AppCompatActivity {
                 &&
                 !(mDeviceList.contains(bleDevice))
                 && (bleDevice.getName().contains("SensorTag"))) {
+                // Add to HashSet
                 mDeviceList.add(bleDevice);
+                // Call function to create new Radio Button View
                 addToView(bleDevice);
-                Log.i("Added", bleDevice.getAddress());
             }
 
         }
@@ -185,6 +192,11 @@ public class DevicePicker extends AppCompatActivity {
         }
     };
 
+    /* Each new device obtained from the scan results is added to the Radio Group view here. We set
+       a listener to look for changed radio button values. But changing the selected device doesn't
+       initiate the connectToDevice() function, for that, we set a listener to the
+       SELECT DEVICE BUTTON.
+     */
     private void addToView(BluetoothDevice bluetoothDevice) {
         RadioGroup singleChoice = new RadioGroup(this);
 
@@ -218,7 +230,7 @@ public class DevicePicker extends AppCompatActivity {
         });
     }
 
-
+    // Method used to find BLE Devices in old versions of Android
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
                 @Override
@@ -229,12 +241,14 @@ public class DevicePicker extends AppCompatActivity {
                 }
             };
 
-
+    // Use GATT to connect to selected device from the Radio View
     public void connectToDevice(BluetoothDevice bluetoothDevice) {
 
         Log.i("MAC ADDRESS", bluetoothDevice.getAddress());
         mGatt = bluetoothDevice.connectGatt(this, false, gattCallback);
         scanLeDevice(false);
+        Toast.makeText(getApplicationContext(), "Connected to" + bluetoothDevice.getName(), Toast.LENGTH_SHORT)
+                    .show();
 
 
     }
@@ -257,6 +271,15 @@ public class DevicePicker extends AppCompatActivity {
                     Log.e("gattCallback", "STATE_OTHER");
             }
         }
+
+        /* Crux of the App. Before we can start receiving data from the sensor, we must send NOTIFY
+        * requests to each of the sensors we are interested in. This will ensure we receive data
+        * continuously. Post this request, we have to actually ENABLE the sensors to get them
+        * started on transmitting the values. The catch however lies in the fact that Android
+        * silently ignores subsequent GATT requests if the previous one doesn't complete. To avoid
+        * that and to get all sensors working, we put the thread to sleep for a short time period
+        * which allows the previously issued request to complete.
+        * */
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
@@ -310,7 +333,7 @@ public class DevicePicker extends AppCompatActivity {
                             safeSleep();
 
                         } else if (serviceUUID.compareTo(SensorTagGatt.UUID_BAR_SERV.toString()) == 0) {
-                            Log.i("Notify BAR", "true");
+
                             enableNotifications(service, SensorTagGatt.UUID_BAR_DATA);
                             safeSleep();
                             enableService(service, SensorTagGatt.UUID_BAR_CONF);
@@ -321,9 +344,6 @@ public class DevicePicker extends AppCompatActivity {
                 }
             });
             worker.start();
-            // BUILD CHARACTERISTIC LIST
-
-
         }
 
         @Override
@@ -331,19 +351,18 @@ public class DevicePicker extends AppCompatActivity {
             Log.i("Characteristic written:", characteristic.getUuid().toString());
         }
 
-
-
+        /* We receive each of the sensor values here as a byte stream. These must be converted into
+        * human readable values. */
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             convertData(characteristic);
         }
 
-
     };
 
+    // Convert characteristic data into byte stream and then insert into database for further operations
     private void convertData(BluetoothGattCharacteristic characteristic) {
         String characteristicUUID = characteristic.getUuid().toString();
-        Log.i("Converting", characteristicUUID);
         byte [] value = characteristic.getValue();
         double lastRead = System.currentTimeMillis();
         if (characteristicUUID.compareTo(SensorTagGatt.UUID_MOV_DATA.toString()) == 0) {
@@ -354,19 +373,11 @@ public class DevicePicker extends AppCompatActivity {
             insertIntoDatabase(lastRead, 10.0, "Accelerometer Y", data.getY(), "G");
             insertIntoDatabase(lastRead, 10.0, "Accelerometer Z", data.getZ(), "G");
 
-            Log.i("Acceleration X", String.format("%.2fG", data.getX()));
-            Log.i("Acceleration Y", String.format("%.2fG", data.getY()));
-            Log.i("Acceleration Z", String.format("%.2fG", data.getZ()));
-
             data = SensorConversion.MOVEMENT_GYRO.convert(value);
 
             insertIntoDatabase(lastRead, 10.0, "Gyro X", data.getX(), "degrees");
             insertIntoDatabase(lastRead, 10.0, "Gyro Y", data.getY(), "degrees");
             insertIntoDatabase(lastRead, 10.0, "Gyro Z", data.getZ(), "degrees");
-
-            /*Log.i("GYRO X", String.format("%.2f degrees", data.getX()));
-            Log.i("GYRO Y", String.format("%.2f degrees", data.getY()));
-            Log.i("GYRO Z", String.format("%.2f degrees", data.getZ()));*/
 
             data = SensorConversion.MOVEMENT_MAG.convert(value);
 
@@ -374,18 +385,12 @@ public class DevicePicker extends AppCompatActivity {
             insertIntoDatabase(lastRead, 10.0, "Magnetometer Y", data.getY(), "uT");
             insertIntoDatabase(lastRead, 10.0, "Magnetometer Z", data.getZ(), "uT");
 
-            /*Log.i("Mag X", String.format("%.2fuT", data.getX()));
-            Log.i("Mag Y", String.format("%.2fuT", data.getY()));
-            Log.i("Mag Z", String.format("%.2fuT", data.getZ()));*/
-
-
         }
 
         else if (characteristicUUID.compareTo(SensorTagGatt.UUID_HUM_DATA.toString()) == 0) {
 
             data = SensorConversion.HUMIDITY2.convert(value);
             insertIntoDatabase(lastRead, 10.0, "Humidity", data.getX(), "rg");
-            Log.i("HUMIDITY DATA:", String.format("Humidity: %.1f %%rH", data.getX()));
 
 
         }
@@ -395,8 +400,6 @@ public class DevicePicker extends AppCompatActivity {
             data = SensorConversion.IR_TEMPERATURE.convert(value);
             insertIntoDatabase(lastRead, 10.0, "Ambient Temperature", data.getX(), "Celsius");
             insertIntoDatabase(lastRead, 10.0, "Infrared Temperature", data.getZ(), "Celsius");
-            Log.i("Ambient Temperature:", String.format("%.1f Celsius", data.getX()));
-            Log.i("IR Temperature:", String.format("%.1f Celsius", data.getZ()));
 
 
         }
@@ -405,12 +408,12 @@ public class DevicePicker extends AppCompatActivity {
 
             data = SensorConversion.LUXOMETER.convert(value);
             insertIntoDatabase(lastRead, 10.0, "Light Intensity", data.getX(), "Lux");
-            Log.i("Light Intensity", String.format("%.2f Lux", data.getX()));
 
 
         } else if (characteristicUUID.compareTo(SensorTagGatt.UUID_BAR_DATA.toString()) == 0) {
 
             data = SensorConversion.BAROMETER.convert(value);
+            // TODO CHECK IF INSERT SHOULD HAVE A DIVIDE BY 100
             insertIntoDatabase(lastRead, 10.0, "Pressure X", data.getX(), "mBar");
             Log.i("Pressure Data:", String.format("%.1f mBar", (data.getX() / 100)));
 
@@ -418,8 +421,9 @@ public class DevicePicker extends AppCompatActivity {
 
     }
 
+    /* We need to broadcast the values for them to be accessible by the plugin class. Trying a direct
+    * insert from here throws a Permission Denied error. */
     private void insertIntoDatabase(Double time, Double period, String sensorname, Double reading, String unit) {
-        Log.i("CONTENT URI", Sensor_Data.CONTENT_URI.toString());
 
         ContentValues row = new ContentValues();
         row.put(Sensor_Data.TIMESTAMP, time);
@@ -429,8 +433,7 @@ public class DevicePicker extends AppCompatActivity {
         row.put(Sensor_Data.VALUE, reading);
         row.put(Sensor_Data.UNIT, unit);
         Intent sharedContext = new Intent("SENSOR_DATA");
-        //sharedContext.putExtra("Timestamp", time);
-        //sharedContext.putExtra("Device_ID", "foo");
+
         sharedContext.putExtra("Update_Period", period);
         sharedContext.putExtra("Sensor", sensorname);
         sharedContext.putExtra("Value", reading);
@@ -440,6 +443,9 @@ public class DevicePicker extends AppCompatActivity {
 
     }
 
+
+    /* Motion (Accelerometer/Gyro/Mag) service has a different structure to it and requires a
+       separate function to enable */
     private void enableMotionService(BluetoothGattService service, UUID uuidMovConf, boolean bool) {
         byte b[] = new byte[] {0x7F,0x00};
         // 0x7F (hexadecimal) = 127 (decimal)
@@ -456,6 +462,7 @@ public class DevicePicker extends AppCompatActivity {
         mGatt.writeCharacteristic(config);
     }
 
+    /* Issue notify requests */
     private void enableNotifications(BluetoothGattService service, UUID uuidData) {
         BluetoothGattCharacteristic dataCharacteristic = service.getCharacteristic(uuidData);
         mGatt.setCharacteristicNotification(dataCharacteristic, true);
@@ -465,7 +472,7 @@ public class DevicePicker extends AppCompatActivity {
         mGatt.writeDescriptor(config);
     }
 
-
+    /* Put thread to sleep */
     private void safeSleep() {
         try {
             Thread.sleep(200);
@@ -474,8 +481,8 @@ public class DevicePicker extends AppCompatActivity {
         }
     }
 
+    /* Enable service request */
     private void enableService(BluetoothGattService service, UUID uuidConf) {
-        Log.i("Enabling:", uuidConf.toString());
         BluetoothGattCharacteristic config = service.getCharacteristic(uuidConf);
         config.setValue(new byte[] {1});
         mGatt.writeCharacteristic(config);

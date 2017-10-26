@@ -134,9 +134,6 @@ public class Plugin extends Aware_Plugin {
             if (!result) {
                 Toast.makeText(getApplicationContext(), "Failed to find devices", Toast.LENGTH_SHORT)
                         .show();
-            } else {
-                Toast.makeText(getApplicationContext(), "Connected to Sensor", Toast.LENGTH_SHORT)
-                        .show();
             }
         }
     }
