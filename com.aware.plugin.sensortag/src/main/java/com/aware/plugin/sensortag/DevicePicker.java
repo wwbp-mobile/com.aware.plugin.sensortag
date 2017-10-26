@@ -1,4 +1,14 @@
+/*
+* Created by: Aayush Chadha
+* Last Updated: 26th October 2017
+* Adapted from:
+* Denzil Ferriera's AWARE Template:
+*   https://github.com/denzilferreira/aware-plugin-template
+* Denzil Ferriera's Device Usage Plugin:
+*   https://github.com/denzilferreira/com.aware.plugin.device_usage
+* */
 package com.aware.plugin.sensortag;
+
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -22,24 +32,26 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.ListView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
-
-import com.aware.Aware;
-import com.aware.Aware_Preferences;
 import com.aware.plugin.sensortag.Provider.Sensor_Data;
-import com.aware.plugin.sensortag.Plugin;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
 public class DevicePicker extends AppCompatActivity {
 
-    private ListView mDevicesListView;
-    private ArrayList<String> mDeviceList = new ArrayList<>();
+    private HashSet<BluetoothDevice> mDeviceList = new HashSet<>();
     private BluetoothAdapter mBluetoothAdapter;
     private int REQUEST_ENABLE_BT = 1;
     private Handler mHandler;
@@ -50,12 +62,17 @@ public class DevicePicker extends AppCompatActivity {
     private BluetoothGatt mGatt;
     private List<BluetoothGattService> mServiceList;
     private Measurement data;
+    private BluetoothDevice selectedDevice;
+
+
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device_picker);
+        getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
 
         mHandler = new Handler();
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -66,7 +83,7 @@ public class DevicePicker extends AppCompatActivity {
 
         final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(
                 Context.BLUETOOTH_SERVICE);
-        mDevicesListView = (ListView) findViewById(R.id.devices_available_to_connect);
+        //mDevicesListView = (ListView) findViewById(R.id.devices_available_to_connect);
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
@@ -140,11 +157,20 @@ public class DevicePicker extends AppCompatActivity {
     }
 
     private ScanCallback mScanCallback = new ScanCallback() {
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
             BluetoothDevice bleDevice = result.getDevice();
-            connectToDevice(bleDevice);
+            if (bleDevice.getType() == BluetoothDevice.DEVICE_TYPE_LE
+                &&
+                !(mDeviceList.contains(bleDevice))
+                && (bleDevice.getName().contains("SensorTag"))) {
+                mDeviceList.add(bleDevice);
+                addToView(bleDevice);
+                Log.i("Added", bleDevice.getAddress());
+            }
+
         }
 
         @Override
@@ -159,29 +185,61 @@ public class DevicePicker extends AppCompatActivity {
         }
     };
 
+    private void addToView(BluetoothDevice bluetoothDevice) {
+        RadioGroup singleChoice = new RadioGroup(this);
+
+        RadioButton rDevice = new RadioButton(this);
+        rDevice.setText(bluetoothDevice.getName());
+        rDevice.setTag(bluetoothDevice.getAddress());
+        singleChoice.addView(rDevice);
+
+        LinearLayout device_container = findViewById(R.id.device_picker);
+        device_container.addView(singleChoice);
+
+        singleChoice.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup radioGroup, int checkedId) {
+                RadioButton selectedRadio = (RadioButton) radioGroup.findViewById(checkedId);
+                for (BluetoothDevice bt: mDeviceList) {
+                    if (bt.getAddress() == selectedRadio.getTag().toString()) {
+                        selectedDevice = bt;
+                    }
+                }
+            }
+        });
+
+        Button saveDevice = (Button) findViewById(R.id.select_device);
+        saveDevice.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                connectToDevice(selectedDevice);
+                finish();
+            }
+        });
+    }
+
+
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
                 @Override
                 public void onLeScan(final BluetoothDevice bluetoothDevice, int i, byte[] bytes) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.i("onLeScan", bluetoothDevice.toString());
-                            connectToDevice(bluetoothDevice);
-                        }
-                    });
+                    Log.i("Bluetooth connection", "Success");
+                    //mDeviceList.add(bluetoothDevice);
+                   addToView(bluetoothDevice);
                 }
             };
 
-    // TODO CHANGE TO RETRIEVE LIST OF DEVICES AND CONNECT TO THE ONE WITH THE RIGHT MAC ADDRESS
+
     public void connectToDevice(BluetoothDevice bluetoothDevice) {
-        if(mGatt == null && bluetoothDevice.getAddress().equals("A0:E6:F8:AE:36:02")) {
-            Log.i("MAC ADDRESS", bluetoothDevice.getAddress());
-            mGatt = bluetoothDevice.connectGatt(this, false, gattCallback);
-            scanLeDevice(false);
-        }
+
+        Log.i("MAC ADDRESS", bluetoothDevice.getAddress());
+        mGatt = bluetoothDevice.connectGatt(this, false, gattCallback);
+        scanLeDevice(false);
+
 
     }
+
+
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
         byte result [];
@@ -380,11 +438,6 @@ public class DevicePicker extends AppCompatActivity {
 
         sendBroadcast(sharedContext);
 
-        Log.d("DATA", row.toString());
-        //getContentResolver().insert(Provider.Sensor_Data.CONTENT_URI, row);
-
-        Log.i("db edited", "true");
-
     }
 
     private void enableMotionService(BluetoothGattService service, UUID uuidMovConf, boolean bool) {
@@ -409,7 +462,6 @@ public class DevicePicker extends AppCompatActivity {
 
         BluetoothGattDescriptor config = dataCharacteristic.getDescriptor(SensorTagGatt.UUID_NOTIFICATIONS);
         config.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-        Log.i("Enabling", service.getUuid().toString());
         mGatt.writeDescriptor(config);
     }
 
@@ -429,58 +481,4 @@ public class DevicePicker extends AppCompatActivity {
         mGatt.writeCharacteristic(config);
 
     }
-
-    /*private void deviceConnected() {
-
-    }*/
-
-
-
-    /*private void displayGattServices(List<BluetoothGattService> services) {
-        if (services == null) {
-            return;
-        }
-
-        String uuid = null;
-
-        ArrayList<HashMap<String, String>> gattServiceData
-                = new ArrayList<HashMap<String, String>>();
-        ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
-                = new ArrayList<ArrayList<HashMap<String, String>>>();
-        ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics
-                = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
-
-        for ()
-    }*
-
-
-    @Override
-    protected void onDestroy() {
-        if (mGatt == null) {
-            return;
-        }
-
-        mGatt.close();
-        mGatt = null;
-        super.onDestroy();
-    }
-
-
-
-    /*private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if(BluetoothDevice.ACTION_FOUND.equals(action)) {
-
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-
-                mDeviceList.add(device.getName() + "\n" + device.getAddress());
-
-                mDevicesListView.setAdapter(new ArrayAdapter<>(context,
-                        android.R.layout.simple_list_item_1, mDeviceList));
-
-            }
-        }
-    };*/
 }
