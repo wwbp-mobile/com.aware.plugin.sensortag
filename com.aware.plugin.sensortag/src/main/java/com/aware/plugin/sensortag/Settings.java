@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
@@ -15,9 +16,9 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
     /**
      * State of this plugin
      */
-    public static final String STATUS_PLUGIN_DEVICE_USAGE = "status_plugin_device_usage";
+    public static final String STATUS_PLUGIN_COLLECTION_FREQUENCY = "status_plugin_collection_frequency";
 
-    private static CheckBoxPreference check;
+    private ListPreference frequency;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,24 +31,24 @@ public class Settings extends PreferenceActivity implements OnSharedPreferenceCh
     @Override
     protected void onResume() {
         super.onResume();
-        check = (CheckBoxPreference) findPreference(STATUS_PLUGIN_DEVICE_USAGE);
-        if (Aware.getSetting(this, STATUS_PLUGIN_DEVICE_USAGE).length() == 0) {
-            Aware.setSetting(this, STATUS_PLUGIN_DEVICE_USAGE, true);
+        frequency = (ListPreference) findPreference(STATUS_PLUGIN_COLLECTION_FREQUENCY);
+        if (Aware.getSetting(this, STATUS_PLUGIN_COLLECTION_FREQUENCY).length() == 0) {
+            Aware.setSetting(this, STATUS_PLUGIN_COLLECTION_FREQUENCY, "30");
         }
-        check.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_DEVICE_USAGE).equals("true"));
+        //frequency.setSummary(Aware.getSetting(this, STATUS_PLUGIN_COLLECTION_FREQUENCY));
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Preference preference = (Preference) findPreference(key);
-        if (preference.getKey().equals(STATUS_PLUGIN_DEVICE_USAGE)) {
-            Aware.setSetting(this, key, sharedPreferences.getBoolean(key, false));
-            check.setChecked(sharedPreferences.getBoolean(key, false));
+        if (preference.getKey().equals(STATUS_PLUGIN_COLLECTION_FREQUENCY)) {
+            Aware.setSetting(this, key, sharedPreferences.getString(key, "30"));
+            preference.setSummary(Aware.getSetting(this, STATUS_PLUGIN_COLLECTION_FREQUENCY));
         }
-        if (Aware.getSetting(this, STATUS_PLUGIN_DEVICE_USAGE).equals("true")) {
-            Aware.startPlugin(getApplicationContext(), "com.aware.plugin.device_usage");
+        if (Aware.getSetting(this, STATUS_PLUGIN_COLLECTION_FREQUENCY).equals("30")) {
+            Aware.startPlugin(getApplicationContext(), "com.aware.plugin.sensortag");
         } else {
-            Aware.stopPlugin(getApplicationContext(), "com.aware.plugin.device_usage");
+            Aware.stopPlugin(getApplicationContext(), "com.aware.plugin.sensortag");
         }
     }
 }

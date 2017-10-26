@@ -36,7 +36,7 @@
             android:theme="@style/Theme.AppCompat.Dialog" />
 
         <service
-            android:name="com.aware.plugin.sensortag.syncadapters.Device_Usage_Sync"
+            android:name="com.aware.plugin.sensortag.syncadapters.Sensortag_Sync"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />

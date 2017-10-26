@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <ListPreference
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:defaultValue="30"
+        android:entries="@array/hr_granularity_labels"
+        android:entryValues="@array/hr_granularity_values"
+        android:key="sensor_granularity"
+        android:summary="Change the sensor data collection frequency"
+        android:persistent="true"
+        android:title="Collection Rate" />
     <CheckBoxPreference
         android:defaultValue="false"
         android:key="status_plugin_device_usage"

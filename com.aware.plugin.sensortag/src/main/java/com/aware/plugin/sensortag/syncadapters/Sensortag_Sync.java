@@ -13,7 +13,7 @@ import com.aware.syncadapters.AwareSyncAdapter;
  * Created by denzilferreira on 17/08/2017.
  */
 
-public class Device_Usage_Sync extends Service {
+public class Sensortag_Sync extends Service {
     private AwareSyncAdapter sSyncAdapter = null;
     private static final Object sSyncAdapterLock = new Object();
 

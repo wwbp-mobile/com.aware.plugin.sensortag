@@ -5,7 +5,7 @@ This plugin receives data from the TI SensorTag.
 
 # Settings
 Parameters adjustable on the dashboard and client:
-- **status_plugin_frequency_of_collection**: (integer) Data Collection Frequency (Default 10Hz)
+- **status_plugin_collection_frequency**: (integer) Data Collection Frequency (Default 10Hz)
 
 # Broadcasts
 **ACTION_AWARE_PLUGIN_SENSORTAG**
@@ -29,8 +29,3 @@ update_period | TEXT | Frequency at which sensor collects data
 sensor| TEXT | One of Accelerometer, Gyro, Magnetometer, Humidity, Light or Pressure
 value | REAL | Value from the sensor
 unit | TEXT | Unit of the reading
-
-Sensor_Data.UPDATE_PERIOD + " text default ''," +
-                    Sensor_Data.SENSOR + " text default ''," +
-                    Sensor_Data.VALUE + " real default 0," +
-                    Sensor_Data.UNIT + " text default ''

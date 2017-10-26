@@ -28,10 +28,15 @@ import android.bluetooth.le.ScanSettings;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.ListPreference;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -64,12 +69,11 @@ public class DevicePicker extends AppCompatActivity {
     private Measurement data;
     private BluetoothDevice selectedDevice;
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         setContentView(R.layout.activity_device_picker);
         getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
@@ -244,7 +248,6 @@ public class DevicePicker extends AppCompatActivity {
     // Use GATT to connect to selected device from the Radio View
     public void connectToDevice(BluetoothDevice bluetoothDevice) {
 
-        Log.i("MAC ADDRESS", bluetoothDevice.getAddress());
         mGatt = bluetoothDevice.connectGatt(this, false, gattCallback);
         scanLeDevice(false);
         Toast.makeText(getApplicationContext(), "Connected to" + bluetoothDevice.getName(), Toast.LENGTH_SHORT)
@@ -256,8 +259,6 @@ public class DevicePicker extends AppCompatActivity {
 
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
-        byte result [];
-        Calendar currentTime;
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             Log.i("onConnectionStateChange", "Status: " + status);
@@ -356,6 +357,7 @@ public class DevicePicker extends AppCompatActivity {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             convertData(characteristic);
+
         }
 
     };
@@ -488,4 +490,11 @@ public class DevicePicker extends AppCompatActivity {
         mGatt.writeCharacteristic(config);
 
     }
+
+    /*private class PreferencesChanged extends PreferenceActivity {
+        @Override
+        protected void onCreate(@Nullable Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+        }
+    }*/
 }
