@@ -47,6 +47,8 @@ import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
+
+import com.aware.Aware;
 import com.aware.plugin.sensortag.Provider.Sensor_Data;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -73,7 +75,7 @@ public class DevicePicker extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        Log.i("AWARE SETTING", Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_COLLECTION_FREQUENCY));
         setContentView(R.layout.activity_device_picker);
         getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
@@ -90,6 +92,7 @@ public class DevicePicker extends AppCompatActivity {
 
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
+
 
     @Override
     protected void onResume() {
@@ -161,14 +164,14 @@ public class DevicePicker extends AppCompatActivity {
 
     /** Newer Android versions support this method for scanning for BLE Devices */
     private ScanCallback mScanCallback = new ScanCallback() {
+        /**
+         onScanResult is called each time we see a device brodcasting. In order to prevent over
+         populating the radio group view, we first check if the device is a BLE DEvice, and then
+         check our hash set to see if we haven't already added it to the view and then finally check
+         if the device is indeed a SensorTag.
+         */
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         @Override
-        /**
-        onScanResult is called each time we see a device brodcasting. In order to prevent over
-        populating the radio group view, we first check if the device is a BLE DEvice, and then
-        check our hash set to see if we haven't already added it to the view and then finally check
-        if the device is indeed a SensorTag.
-         */
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
             BluetoothDevice bleDevice = result.getDevice();

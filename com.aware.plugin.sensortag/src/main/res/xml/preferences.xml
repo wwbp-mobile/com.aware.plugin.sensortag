@@ -6,7 +6,7 @@
         android:defaultValue="30"
         android:entries="@array/hr_granularity_labels"
         android:entryValues="@array/hr_granularity_values"
-        android:key="sensor_granularity"
+        android:key="status_plugin_collection_frequency"
         android:summary="Change the sensor data collection frequency"
         android:persistent="true"
         android:title="Collection Rate" />

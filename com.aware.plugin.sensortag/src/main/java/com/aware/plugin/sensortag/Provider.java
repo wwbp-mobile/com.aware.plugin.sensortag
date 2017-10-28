@@ -189,7 +189,7 @@ public class Provider extends ContentProvider {
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0], DEVICE_USAGE); //URI for all records
         sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0] + "/#", DEVICE_USAGE_ID); //URI for a single record
 
-        sensorDataHash = new HashMap<String, String>();
+        sensorDataHash = new HashMap<>();
         sensorDataHash.put(Sensor_Data._ID, Sensor_Data._ID);
         sensorDataHash.put(Sensor_Data.TIMESTAMP, Sensor_Data.TIMESTAMP);
         sensorDataHash.put(Sensor_Data.DEVICE_ID, Sensor_Data.DEVICE_ID);
