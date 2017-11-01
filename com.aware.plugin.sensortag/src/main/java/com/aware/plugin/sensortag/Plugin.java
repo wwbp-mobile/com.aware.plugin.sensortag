@@ -10,16 +10,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
-import com.aware.Screen;
 import com.aware.utils.Aware_Plugin;
 
 public class Plugin extends Aware_Plugin {
@@ -93,9 +90,13 @@ public class Plugin extends Aware_Plugin {
 
         if (PERMISSIONS_OK) {
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
-            if (Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_COLLECTION_FREQUENCY).length() == 0)
-                Aware.setSetting(getApplicationContext(), Settings.STATUS_PLUGIN_COLLECTION_FREQUENCY, "30");
-            Aware.setSetting(this, Settings.STATUS_PLUGIN_COLLECTION_FREQUENCY, "30");
+
+            Aware.setSetting(this, Settings.STATUS_PLUGIN_SENSORTAG, true);
+
+            if (Aware.getSetting(getApplicationContext(), Settings.PLUGIN_COLLECTION_FREQUENCY).length() == 0)
+                Aware.setSetting(getApplicationContext(), Settings.PLUGIN_COLLECTION_FREQUENCY, "30");
+            Aware.setSetting(this, Settings.PLUGIN_COLLECTION_FREQUENCY, getSharedPreferences(
+                    Settings.PLUGIN_COLLECTION_FREQUENCY, MODE_PRIVATE).getString(Settings.PLUGIN_COLLECTION_FREQUENCY, "30"));
             Aware.setSetting(this, Aware_Preferences.STATUS_SCREEN, true);
 
 
@@ -157,7 +158,7 @@ public class Plugin extends Aware_Plugin {
     public void onDestroy() {
         super.onDestroy();
 
-        Aware.setSetting(this, Settings.STATUS_PLUGIN_COLLECTION_FREQUENCY, "30");
+        Aware.setSetting(this, Settings.PLUGIN_COLLECTION_FREQUENCY, "30");
 
         if (Aware.isStudy(this) && (getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone))) {
             ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);

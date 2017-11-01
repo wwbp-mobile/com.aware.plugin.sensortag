@@ -12,8 +12,8 @@
         android:title="Collection Rate" />
     <CheckBoxPreference
         android:defaultValue="false"
-        android:key="status_plugin_device_usage"
+        android:key="status_plugin_sensortag"
         android:persistent="true"
-        android:summary="Logs device usage and non-usage."
+        android:summary="Enable/disable sensor tag plugin"
         android:title="Active" />
 </PreferenceScreen>

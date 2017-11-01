@@ -1,7 +1,7 @@
 /**
  * @author: denzil
  */
-// TODO REMOVE REDUNDANT CODE FOR THE DEVICE PICKER BUTTON THAT DOESN"T FUNCTION
+// DONE REMOVE REDUNDANT CODE FOR THE DEVICE PICKER BUTTON THAT DOESN'T FUNCTION
 package com.aware.plugin.sensortag;
 
 import android.content.ContentProvider;
@@ -68,10 +68,10 @@ public class Provider extends ContentProvider {
     }
 
     //ContentProvider query indexes
+    // private static final int SENSOR_TAG = 1;
+    // private static final int SENSOR_TAG_ID = 2;
     private static final int SENSOR_TAG = 1;
     private static final int SENSOR_TAG_ID = 2;
-    private static final int DEVICE_USAGE = 1;
-    private static final int DEVICE_USAGE_ID = 2;
 
     /**
      * Database stored in external folder: /AWARE/plugin_sensortag.db
@@ -127,7 +127,7 @@ public class Provider extends ContentProvider {
 
         int count;
         switch (sUriMatcher.match(uri)) {
-            case DEVICE_USAGE:
+            case SENSOR_TAG:
                 count = database.delete(DATABASE_TABLES[0], selection, selectionArgs);
                 break;
             default:
@@ -186,8 +186,8 @@ public class Provider extends ContentProvider {
         AUTHORITY = getContext().getPackageName() + ".provider.sensortag";
 
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0], DEVICE_USAGE); //URI for all records
-        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0] + "/#", DEVICE_USAGE_ID); //URI for a single record
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0], SENSOR_TAG); //URI for all records
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0] + "/#", SENSOR_TAG_ID); //URI for a single record
 
         sensorDataHash = new HashMap<>();
         sensorDataHash.put(Sensor_Data._ID, Sensor_Data._ID);

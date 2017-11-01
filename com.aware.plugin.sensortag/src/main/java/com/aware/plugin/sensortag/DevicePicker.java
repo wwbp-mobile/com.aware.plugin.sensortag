@@ -28,15 +28,10 @@ import android.bluetooth.le.ScanSettings;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.ListPreference;
-import android.preference.PreferenceActivity;
-import android.preference.PreferenceManager;
-import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -51,7 +46,6 @@ import android.widget.Toast;
 import com.aware.Aware;
 import com.aware.plugin.sensortag.Provider.Sensor_Data;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -70,15 +64,15 @@ public class DevicePicker extends AppCompatActivity {
     private List<BluetoothGattService> mServiceList;
     private Measurement data;
     private BluetoothDevice selectedDevice;
+    private String sensorPeriod;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        Log.i("AWARE SETTING", Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_COLLECTION_FREQUENCY));
         setContentView(R.layout.activity_device_picker);
         getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 
+        sensorPeriod = Aware.getSetting(getApplicationContext(), Settings.PLUGIN_COLLECTION_FREQUENCY);
 
         mHandler = new Handler();
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -315,6 +309,7 @@ public class DevicePicker extends AppCompatActivity {
                             Log.i("Notify HUM", "true");
                             enableNotifications(service, SensorTagGatt.UUID_HUM_DATA);
                             safeSleep();
+                            //changePeriod(service, SensorTagGatt.UUID_HUM_PERI, sensorPeriod);
                             enableService(service, SensorTagGatt.UUID_HUM_CONF);
                             safeSleep();
 
@@ -418,8 +413,8 @@ public class DevicePicker extends AppCompatActivity {
         } else if (characteristicUUID.compareTo(SensorTagGatt.UUID_BAR_DATA.toString()) == 0) {
 
             data = SensorConversion.BAROMETER.convert(value);
-            // TODO CHECK IF INSERT SHOULD HAVE A DIVIDE BY 100
-            insertIntoDatabase(lastRead, 10.0, "Pressure X", data.getX(), "mBar");
+            // DONE CHECK IF INSERT SHOULD HAVE A DIVIDE BY 100
+            insertIntoDatabase(lastRead, 10.0, "Pressure", ((data.getX())/100), "mBar");
             Log.i("Pressure Data:", String.format("%.1f mBar", (data.getX() / 100)));
 
         }
@@ -493,6 +488,16 @@ public class DevicePicker extends AppCompatActivity {
         mGatt.writeCharacteristic(config);
 
     }
+
+    /*private void changePeriod(BluetoothGattService service, UUID periodUUID, byte p) {
+        BluetoothGattCharacteristic periodCharacteristic = service.getCharacteristic(periodUUID);
+
+        byte[] val = new byte[1];
+        val[0] = p;
+
+        periodCharacteristic.setValue(p);
+        mGatt.writeCharacteristic(periodCharacteristic);
+    }*/
 
     /*private class PreferencesChanged extends PreferenceActivity {
         @Override
