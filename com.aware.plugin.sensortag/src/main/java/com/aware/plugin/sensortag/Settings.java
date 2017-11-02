@@ -7,7 +7,6 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import com.aware.Aware;
 
@@ -16,11 +15,11 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     /**
      * State of this plugin
      */
-    public static final String PLUGIN_COLLECTION_FREQUENCY = "status_plugin_collection_frequency";
+    public static final String FREQUENCY_PLUGIN_SENSORTAG = "frequency_plugin_sensortag";
     public static final String STATUS_PLUGIN_SENSORTAG = "status_plugin_sensortag";
 
-    private ListPreference frequency;
     private CheckBoxPreference status;
+    private ListPreference frequency;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,34 +32,36 @@ public class Settings extends PreferenceActivity implements SharedPreferences.On
     @Override
     protected void onResume() {
         super.onResume();
-        frequency = (ListPreference) findPreference(PLUGIN_COLLECTION_FREQUENCY);
+
         status = (CheckBoxPreference) findPreference(STATUS_PLUGIN_SENSORTAG);
+        frequency = (ListPreference) findPreference(FREQUENCY_PLUGIN_SENSORTAG);
+
         if (Aware.getSetting(this, STATUS_PLUGIN_SENSORTAG).length() == 0) {
-            Aware.setSetting(this, STATUS_PLUGIN_SENSORTAG, true); //by default, the setting is true on install
+            Aware.setSetting(this, STATUS_PLUGIN_SENSORTAG, true);
         }
         status.setChecked(Aware.getSetting(getApplicationContext(), STATUS_PLUGIN_SENSORTAG).equals("true"));
-        if (Aware.getSetting(this, PLUGIN_COLLECTION_FREQUENCY).length() == 0) {
-            Log.i("Called again", "true");
-            Aware.setSetting(this, PLUGIN_COLLECTION_FREQUENCY, "20");
+
+        if (Aware.getSetting(this, FREQUENCY_PLUGIN_SENSORTAG).length() == 0) {
+            Aware.setSetting(this, FREQUENCY_PLUGIN_SENSORTAG, "30");
         }
-        //frequency.setSummary(Aware.getSetting(this, PLUGIN_COLLECTION_FREQUENCY));
+        frequency.setSummary(Aware.getSetting(this, FREQUENCY_PLUGIN_SENSORTAG) + " Hz");
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Preference preference = (Preference) findPreference(key);
-        Log.i("Preference key", preference.getKey());
-        if (preference.getKey().equals(PLUGIN_COLLECTION_FREQUENCY)) {
-            Aware.setSetting(this, key, sharedPreferences.getString(key, "30"));
-            preference.setSummary(Aware.getSetting(this, PLUGIN_COLLECTION_FREQUENCY));
-        }
+
         if (preference.getKey().equals(STATUS_PLUGIN_SENSORTAG)) {
             Aware.setSetting(this, key, sharedPreferences.getBoolean(key, false));
             status.setChecked(sharedPreferences.getBoolean(key, false));
         }
 
-        if (Aware.getSetting(this, PLUGIN_COLLECTION_FREQUENCY).contains("0")) {
-            Log.i("Starting again", "true");
+        if (preference.getKey().equals(FREQUENCY_PLUGIN_SENSORTAG)) {
+            Aware.setSetting(this, key, sharedPreferences.getString(key, "30"));
+            preference.setSummary(Aware.getSetting(this, FREQUENCY_PLUGIN_SENSORTAG) + " Hz");
+        }
+
+        if (Aware.getSetting(this, STATUS_PLUGIN_SENSORTAG).equals("true")) {
             Aware.startPlugin(getApplicationContext(), "com.aware.plugin.sensortag");
         } else {
             Aware.stopPlugin(getApplicationContext(), "com.aware.plugin.sensortag");

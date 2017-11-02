@@ -8,21 +8,13 @@ import java.util.UUID;
 
 import static java.util.UUID.fromString;
 
-
-import java.util.UUID;
-
-import static java.util.UUID.fromString;
-
 public class SensorTagGatt {
 
     public final static UUID
 
     UUID_DEVINFO_SERV = fromString("0000180a-0000-1000-8000-00805f9b34fb"),
-
     UUID_DEVINFO_FWREV = fromString("00002A26-0000-1000-8000-00805f9b34fb"),
-
     UUID_NOTIFICATIONS = fromString("00002902-0000-1000-8000-00805f9b34fb"),
-
 
     UUID_IRT_SERV = fromString("f000aa00-0451-4000-b000-000000000000"),
     UUID_IRT_DATA = fromString("f000aa01-0451-4000-b000-000000000000"),
@@ -81,6 +73,5 @@ public class SensorTagGatt {
     //Simple Keys Service
     UUID_KEY_SERV = fromString("0000ffe0-0000-1000-8000-00805f9b34fb"),
     UUID_KEY_DATA = fromString("0000ffe1-0000-1000-8000-00805f9b34fb");
-
 }
 

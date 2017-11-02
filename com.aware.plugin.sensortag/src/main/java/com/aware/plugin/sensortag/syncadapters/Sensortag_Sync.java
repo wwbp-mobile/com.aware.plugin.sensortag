@@ -26,7 +26,8 @@ public class Sensortag_Sync extends Service {
                 sSyncAdapter.init(
                         Provider.DATABASE_TABLES, Provider.TABLES_FIELDS,
                         new Uri[]{
-                                Provider.Sensor_Data.CONTENT_URI
+                                Provider.SensorTag_Data.CONTENT_URI,
+                                Provider.SensorTag_Devices.CONTENT_URI
                         }
                 );
             }

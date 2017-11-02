@@ -1,1 +1,1 @@
-include ':com.aware.plugin.sensortag', ':aware-core-release'
+include ':com.aware.plugin.sensortag', ':com.aware.plugin.sensortag.lib'

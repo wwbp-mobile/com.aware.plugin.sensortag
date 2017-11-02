@@ -15,7 +15,6 @@ public class Measurement {
      * @param z
      */
     Measurement(double x, double y, double z) {
-
         this.x = x;
         this.y = y;
         this.z = z;
@@ -23,14 +22,14 @@ public class Measurement {
     }
 
     double getCombined() {
-        return Math.sqrt(x*x + y*y + z*z);
+        return Math.sqrt(x * x + y * y + z * z);
     }
 
     double getX() {
         return x;
     }
 
-    double getY () {
+    double getY() {
         return y;
     }
 

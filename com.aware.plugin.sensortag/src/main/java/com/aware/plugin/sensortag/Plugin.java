@@ -4,47 +4,25 @@
 package com.aware.plugin.sensortag;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.os.AsyncTask;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.aware.Aware;
 import com.aware.Aware_Preferences;
 import com.aware.utils.Aware_Plugin;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class Plugin extends Aware_Plugin {
 
-    public static BLEDevicePicker bleDevicePicker = null;
+    private static String DEVICE_ID;
 
-    /**
-     * Broadcasted event: the user has turned on his phone
-     */
-    public static final String ACTION_AWARE_PLUGIN_SENSORTAG = "ACTION_AWARE_PLUGIN_SENSORTAG";
-
-    /**
-     * Extra (double): how long was the phone OFF until the user turned it ON
-     */
-    public static final String SENSOR = "sensor";
-    public static final String UNIT = "unit";
-    public static final String UPDATE_PERIOD = "update_period";
-    public static final String VALUE = "value";
-
-    /**
-     * Extra (double): how long was the phone ON until the user turned it OFF
-     */
-
-
-    private static String sensor = "";
-    private static String unit = "";
-    private static double update_period = 0;
-    private static double value = 0;
+    public static final String ACTION_RECORD_SENSORTAG = "ACTION_RECORD_SENSORTAG";
 
     @Override
     public void onCreate() {
@@ -54,52 +32,36 @@ public class Plugin extends Aware_Plugin {
 
         TAG = "AWARE::Sensor Tag";
 
-        //Shares this plugin's context to AWARE and applications
-        CONTEXT_PRODUCER = new ContextProducer() {
-            @Override
-            public void onContext() {
-                ContentValues context_data = new ContentValues();
-                context_data.put(Provider.Sensor_Data.TIMESTAMP, System.currentTimeMillis());
-                context_data.put(Provider.Sensor_Data.DEVICE_ID, Aware.getSetting(getApplicationContext(), Aware_Preferences.DEVICE_ID));
-                context_data.put(Provider.Sensor_Data.SENSOR, sensor);
-                context_data.put(Provider.Sensor_Data.UNIT, unit);
-                context_data.put(Provider.Sensor_Data.UPDATE_PERIOD, update_period);
-                context_data.put(Provider.Sensor_Data.VALUE, value);
-
-                if (DEBUG) Log.d(TAG, context_data.toString());
-
-                //insert data to device usage table
-                getContentResolver().insert(Provider.Sensor_Data.CONTENT_URI, context_data);
-
-                Intent sharedContext = new Intent(ACTION_AWARE_PLUGIN_SENSORTAG);
-                sharedContext.putExtra(SENSOR, sensor);
-                sharedContext.putExtra(UPDATE_PERIOD, update_period);
-                sharedContext.putExtra(UNIT, unit);
-                sharedContext.putExtra(VALUE, value);
-                sendBroadcast(sharedContext);
-            }
-        };
-
         REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH);
+        REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH_ADMIN);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
 
+        if (intent != null && intent.getAction() != null && intent.getAction().equalsIgnoreCase(ACTION_RECORD_SENSORTAG)) {
+            String data = intent.getStringExtra("data");
+            String sensor = intent.getStringExtra("sensor");
+            try {
+                JSONObject dataJson = new JSONObject(data);
+                saveSmartTagData(getApplicationContext(), sensor, dataJson);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
 
         if (PERMISSIONS_OK) {
+
+            DEVICE_ID = Aware.getSetting(this, Aware_Preferences.DEVICE_ID);
+
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
 
             Aware.setSetting(this, Settings.STATUS_PLUGIN_SENSORTAG, true);
 
-            if (Aware.getSetting(getApplicationContext(), Settings.PLUGIN_COLLECTION_FREQUENCY).length() == 0)
-                Aware.setSetting(getApplicationContext(), Settings.PLUGIN_COLLECTION_FREQUENCY, "30");
-            Aware.setSetting(this, Settings.PLUGIN_COLLECTION_FREQUENCY, getSharedPreferences(
-                    Settings.PLUGIN_COLLECTION_FREQUENCY, MODE_PRIVATE).getString(Settings.PLUGIN_COLLECTION_FREQUENCY, "30"));
-            Aware.setSetting(this, Aware_Preferences.STATUS_SCREEN, true);
-
-
+            if (Aware.getSetting(getApplicationContext(), Settings.FREQUENCY_PLUGIN_SENSORTAG).length() == 0)
+                Aware.setSetting(getApplicationContext(), Settings.FREQUENCY_PLUGIN_SENSORTAG, "30");
 
             if (!Aware.isSyncEnabled(this, Provider.getAuthority(this)) && Aware.isStudy(this) && getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone)) {
                 ContentResolver.setIsSyncable(Aware.getAWAREAccount(this), Provider.getAuthority(this), 1);
@@ -112,53 +74,112 @@ public class Plugin extends Aware_Plugin {
                 );
             }
 
-            Aware.startAWARE(this);
-            bleDevicePicker = new BLEDevicePicker();
-            bleDevicePicker.execute();
-            IntentFilter filter = new IntentFilter("SENSOR_DATA");
-            this.registerReceiver(new Receiver(), filter);
+            pairSmartTags();
 
+            Aware.startAWARE(this);
         }
         return START_STICKY;
     }
 
-    public class BLEDevicePicker extends AsyncTask<Void, Void, Boolean> {
-
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-
+    private void pairSmartTags() {
+        Cursor paired = getContentResolver().query(Provider.SensorTag_Devices.CONTENT_URI, null, null, null, null);
+        if (paired == null || paired.getCount() == 0) {
             Intent devicePicker = new Intent(getApplicationContext(), DevicePicker.class);
             devicePicker.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(devicePicker);
-            return true;
         }
+        if (paired != null) paired.close();
+    }
 
-        @Override
-        protected void onPostExecute(Boolean result) {
-            super.onPostExecute(result);
-            if (!result) {
-                Toast.makeText(getApplicationContext(), "Failed to find devices", Toast.LENGTH_SHORT)
-                        .show();
-            }
+    public static void removeSmartTag(Context context, String sensor_mac) {
+        context.getContentResolver().delete(Provider.SensorTag_Devices.CONTENT_URI, Provider.SensorTag_Devices.SENSOR_TAG_DEVICE + " like '" + sensor_mac + "'", null);
+    }
+
+    public static void saveSmartTag(Context context, String sensor_mac, JSONObject smartag) {
+        Cursor smartTags = context.getContentResolver().query(Provider.SensorTag_Devices.CONTENT_URI, null, Provider.SensorTag_Devices.SENSOR_TAG_DEVICE + " like '" + sensor_mac + "'", null,null);
+        if (smartTags == null || smartTags.getCount() == 0) {
+            ContentValues context_data = new ContentValues();
+            context_data.put(Provider.SensorTag_Devices.TIMESTAMP, System.currentTimeMillis());
+            context_data.put(Provider.SensorTag_Devices.DEVICE_ID, DEVICE_ID);
+            context_data.put(Provider.SensorTag_Devices.SENSOR_TAG_DEVICE, sensor_mac);
+            context_data.put(Provider.SensorTag_Devices.SENSOR_TAG_INFO, smartag.toString());
+
+            context.getContentResolver().insert(Provider.SensorTag_Devices.CONTENT_URI, context_data);
+
+            if (awareSensor != null) awareSensor.onSmartTagChanged(context_data);
+        }
+        if (smartTags != null) smartTags.close();
+    }
+
+    public static void saveSmartTagData(Context context, String sensor, JSONObject data) {
+        ContentValues context_data = new ContentValues();
+        context_data.put(Provider.SensorTag_Data.TIMESTAMP, System.currentTimeMillis());
+        context_data.put(Provider.SensorTag_Data.DEVICE_ID, DEVICE_ID);
+        context_data.put(Provider.SensorTag_Data.SENSOR_TAG_SENSOR, sensor);
+        context_data.put(Provider.SensorTag_Data.SENSOR_TAG_DATA, data.toString());
+
+        context.getContentResolver().insert(Provider.SensorTag_Data.CONTENT_URI, context_data);
+
+        if (awareSensor != null) {
+            if (sensor.equalsIgnoreCase("accelerometer"))
+                awareSensor.onAccelerometerChanged(context_data);
+            if (sensor.equalsIgnoreCase("gyroscope"))
+                awareSensor.onGyroscopeChanged(context_data);
+            if (sensor.equalsIgnoreCase("humidity"))
+                awareSensor.onHumidityChanged(context_data);
+            if (sensor.equalsIgnoreCase("ambient_temperature"))
+                awareSensor.onAmbientTemperatureChanged(context_data);
+            if (sensor.equalsIgnoreCase("target_temperature"))
+                awareSensor.onTargetTemperatureChanged(context_data);
+            if (sensor.equalsIgnoreCase("light"))
+                awareSensor.onLightChanged(context_data);
+            if (sensor.equalsIgnoreCase("barometer"))
+                awareSensor.onBarometerChanged(context_data);
         }
     }
 
-    private class Receiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            sensor = intent.getExtras().getString("Sensor");
-            value = intent.getExtras().getDouble("Value");
-            unit = intent.getExtras().getString("Unit");
-            update_period = intent.getExtras().getDouble("Update_Period");
-            CONTEXT_PRODUCER.onContext();
-        }
+    /**
+     * Supported callbacks for this plugin
+     */
+    private static AWARESensorObserver awareSensor;
+
+    /**
+     * Assign observer from application
+     * @param observer
+     */
+    public static void setSensorObserver(AWARESensorObserver observer) {
+        awareSensor = observer;
+    }
+
+    /**
+     * Return assigned observer
+     * @return
+     */
+    public static AWARESensorObserver getSensorObserver() {
+        return awareSensor;
+    }
+
+    /**
+     * Interface to interact with observers' callbacks
+     */
+    public interface AWARESensorObserver {
+        void onAccelerometerChanged(ContentValues data);
+        void onGyroscopeChanged(ContentValues data);
+        void onHumidityChanged(ContentValues data);
+        void onAmbientTemperatureChanged(ContentValues data);
+        void onTargetTemperatureChanged(ContentValues data);
+        void onLightChanged(ContentValues data);
+        void onBarometerChanged(ContentValues data);
+        /**
+         * SmartTag device paired
+         * @param data
+         */
+        void onSmartTagChanged(ContentValues data);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        Aware.setSetting(this, Settings.PLUGIN_COLLECTION_FREQUENCY, "30");
 
         if (Aware.isStudy(this) && (getApplicationContext().getPackageName().equalsIgnoreCase("com.aware.phone") || getApplicationContext().getResources().getBoolean(R.bool.standalone))) {
             ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);
@@ -169,6 +190,7 @@ public class Plugin extends Aware_Plugin {
             );
         }
 
+        Aware.setSetting(this, Settings.STATUS_PLUGIN_SENSORTAG, false);
         Aware.stopAWARE(this);
     }
 }

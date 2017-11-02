@@ -4,12 +4,6 @@ import android.bluetooth.BluetoothGattCharacteristic;
 
 import java.util.UUID;
 
-import static java.lang.Math.pow;
-
-import android.bluetooth.BluetoothGattCharacteristic;
-
-import java.util.UUID;
-
 import static com.aware.plugin.sensortag.SensorTagGatt.UUID_ACC_CONF;
 import static com.aware.plugin.sensortag.SensorTagGatt.UUID_HUM_CONF;
 import static com.aware.plugin.sensortag.SensorTagGatt.UUID_HUM_DATA;
@@ -33,12 +27,9 @@ import static java.lang.Math.pow;
  * Taken from jordanleex13/SensorTag and modified for this application.
  * Reference link - https://github.com/jordanleex13/SensorTag
  */
-
-
 public enum SensorConversion {
-
     /*
-    * Apparently, the IR temperature sensor provides two readings
+    * The IR temperature sensor provides two readings
     * 1) Object Temperature
     * 2) Ambient Temperature
     *
@@ -62,10 +53,10 @@ public enum SensorConversion {
 
         private double extractAmbientTemperature(byte[] v) {
             int offset = 2;
-            return shortUnsignedAtOffset(v, offset) /128.0;
+            return shortUnsignedAtOffset(v, offset) / 128.0;
         }
 
-        private double extractTargetTemperature(byte [] v, double ambient) {
+        private double extractTargetTemperature(byte[] v, double ambient) {
             Integer twoByteValue = shortSignedAtOffset(v, 0);
 
             double Vobj2 = twoByteValue.doubleValue();
@@ -90,10 +81,9 @@ public enum SensorConversion {
             return tObj - 273.15;
 
 
-
         }
 
-        private double extractTargetTemperatureTMP007(byte [] v) {
+        private double extractTargetTemperatureTMP007(byte[] v) {
             int offset = 0;
             return shortUnsignedAtOffset(v, offset) / 128.0;
         }
@@ -106,41 +96,41 @@ public enum SensorConversion {
             // Range 8G
             final float SCALE = (float) 4096.0;
 
-            int x = (value[7]<<8) + value[6];
-            int y = (value[9]<<8) + value[8];
-            int z = (value[11]<<8) + value[10];
-            return new Measurement(((x / SCALE) * -1), y / SCALE, ((z / SCALE)*-1));
+            int x = (value[7] << 8) + value[6];
+            int y = (value[9] << 8) + value[8];
+            int z = (value[11] << 8) + value[10];
+            return new Measurement(((x / SCALE) * -1), y / SCALE, ((z / SCALE) * -1));
 
         }
 
     },
 
     MOVEMENT_GYRO(UUID_MOV_SERV, UUID_MOV_DATA, UUID_MOV_CONF, (byte) 3) {
-
         @Override
         public Measurement convert(final byte[] value) {
 
             final float SCALE = (float) 128.0;
 
-            int x = (value[1]<<8) + value[0];
-            int y = (value[3]<<8) + value[2];
-            int z = (value[5]<<8) + value[4];
+            int x = (value[1] << 8) + value[0];
+            int y = (value[3] << 8) + value[2];
+            int z = (value[5] << 8) + value[4];
             return new Measurement(x / SCALE, y / SCALE, z / SCALE);
         }
 
     },
 
-    MOVEMENT_MAG(UUID_MOV_SERV,UUID_MOV_DATA, UUID_MOV_CONF, (byte) 3) {
+    MOVEMENT_MAG(UUID_MOV_SERV, UUID_MOV_DATA, UUID_MOV_CONF, (byte) 3) {
         @Override
         public Measurement convert(final byte[] value) {
             final float SCALE = (float) (32768 / 4912);
             if (value.length >= 18) {
-                int x = (value[13]<<8) + value[12];
-                int y = (value[15]<<8) + value[14];
-                int z = (value[17]<<8) + value[16];
+                int x = (value[13] << 8) + value[12];
+                int y = (value[15] << 8) + value[14];
+                int z = (value[17] << 8) + value[16];
                 return new Measurement(x / SCALE, y / SCALE, z / SCALE);
+            } else {
+                return new Measurement(0, 0, 0);
             }
-            else { return new Measurement(0,0,0); }
         }
     },
 
@@ -168,10 +158,10 @@ public enum SensorConversion {
 
     LUXOMETER(UUID_OPT_SERV, UUID_OPT_DATA, UUID_OPT_CONF) {
         @Override
-        public Measurement convert(final byte [] value) {
+        public Measurement convert(final byte[] value) {
             int mantissa;
             int exponent;
-            Integer sfloat= shortUnsignedAtOffset(value, 0);
+            Integer sfloat = shortUnsignedAtOffset(value, 0);
 
             mantissa = sfloat & 0x0FFF;
             exponent = (sfloat >> 12) & 0xFF;
@@ -219,24 +209,19 @@ public enum SensorConversion {
     /**
      * Standard constructor for all sensors apart from movement, since movement sensor
      * requires specific enable bits.
+     *
      * @param uuidServ
      * @param uuidData
      * @param uuidConf
      */
-
-
     SensorConversion(UUID uuidServ, UUID uuidData, UUID uuidConf) {
-
         this.service = uuidServ;
         this.data = uuidData;
         this.config = uuidConf;
         this.enableCode = ENABLE_SENSOR_CODE;
     }
 
-
-
     SensorConversion(UUID uuidMovServ, UUID uuidMovData, UUID uuidMovConf, byte b) {
-
         this.service = uuidMovServ;
         this.data = uuidMovData;
         this.config = uuidMovConf;
@@ -246,24 +231,24 @@ public enum SensorConversion {
     /**
      * Gyroscope, Magnetometer, Barometer, IR temperature all store 16 bit two's complement values as LSB MSB, which cannot be directly parsed
      * as getIntValue(FORMAT_SINT16, offset) because the bytes are stored as little-endian.
-     *
+     * <p>
      * This function extracts these 16 bit two's complement values.
-     * */
+     */
     private static Integer shortSignedAtOffset(byte[] c, int offset) {
         Integer lowerByte = (int) c[offset] & 0xFF;
-        Integer upperByte = (int) c[offset+1]; // // Interpret MSB as signed
+        Integer upperByte = (int) c[offset + 1]; // // Interpret MSB as signed
         return (upperByte << 8) + lowerByte;
     }
 
     private static Integer shortUnsignedAtOffset(byte[] c, int offset) {
         Integer lowerByte = (int) c[offset] & 0xFF;
-        Integer upperByte = (int) c[offset+1] & 0xFF;
+        Integer upperByte = (int) c[offset + 1] & 0xFF;
         return (upperByte << 8) + lowerByte;
     }
 
     private static Integer twentyFourBitUnsignedAtOffset(byte[] c, int offset) {
         Integer lowerByte = (int) c[offset] & 0xFF;
-        Integer mediumByte = (int) c[offset+1] & 0xFF;
+        Integer mediumByte = (int) c[offset + 1] & 0xFF;
         Integer upperByte = (int) c[offset + 2] & 0xFF;
         return (upperByte << 16) + (mediumByte << 8) + lowerByte;
     }
@@ -272,14 +257,13 @@ public enum SensorConversion {
         throw new UnsupportedOperationException("Error: the individual enum classes are supposed to override this method.");
     }
 
-
     public Measurement convert(byte[] value) {
         throw new UnsupportedOperationException("Error: the individual enum classes are supposed to override this method.");
     }
 
     /**
      * @return the code which, when written to the configuration characteristic, turns on the sensor.
-     * */
+     */
     public byte getEnableSensorCode() {
         return enableCode;
     }

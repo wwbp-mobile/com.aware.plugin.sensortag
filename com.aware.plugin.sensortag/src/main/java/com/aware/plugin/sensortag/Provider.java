@@ -5,6 +5,7 @@
 package com.aware.plugin.sensortag;
 
 import android.content.ContentProvider;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -32,46 +33,46 @@ public class Provider extends ContentProvider {
     /**
      * ContentProvider database version. Increment every time you modify the database structure
      */
-    public static final int DATABASE_VERSION = 4;
+    public static final int DATABASE_VERSION = 6;
 
-    public static final class Sensor_Data implements BaseColumns {
-        private Sensor_Data() {
+    /**
+     * Shared in all database tables
+     */
+    public interface AWAREColumns extends BaseColumns {
+        String _ID = "_id";
+        String TIMESTAMP = "timestamp";
+        String DEVICE_ID = "device_id";
+    }
+
+    public static final class SensorTag_Data implements AWAREColumns {
+        private SensorTag_Data() {
         }
 
-        /**
-         * Your ContentProvider table content URI.<br/>
-         * The last segment needs to match your database table name
-         */
-        public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/plugin_sensortag");
+        public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/sensortag_data");
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.aware.plugin.sensortag.data";
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.aware.plugin.sensortag.data";
 
-        /**
-         * How your data collection is identified internally in Android (vnd.android.cursor.dir). <br/>
-         * It needs to be /vnd.aware.plugin.XXX where XXX is your plugin name (no spaces!).
-         */
-        public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.aware.plugin.sensortag";
+        public static final String SENSOR_TAG_SENSOR = "sensortag_sensor";
+        public static final String SENSOR_TAG_DATA = "sensortag_data";
+    }
 
-        /**
-         * How each row is identified individually internally in Android (vnd.android.cursor.item). <br/>
-         * It needs to be /vnd.aware.plugin.XXX where XXX is your plugin name (no spaces!).
-         */
-        public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.aware.plugin.sensortag";
+    public static final class SensorTag_Devices implements AWAREColumns {
+        private SensorTag_Devices() {
+        }
 
-        public static final String _ID = "_id";
-        public static final String TIMESTAMP = "timestamp";
-        public static final String DEVICE_ID = "device_id";
-        public static final String UPDATE_PERIOD = "update_period";
-        public static final String SENSOR = "sensor";
-        public static final String VALUE = "value";
-        public static final String UNIT = "unit";
-        /*public static final String ELAPSED_DEVICE_ON = "double_elapsed_device_on";
-        public static final String ELAPSED_DEVICE_OFF = "double_elapsed_device_off";*/
+        public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/sensortag_devices");
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.aware.plugin.sensortag.devices";
+        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.aware.plugin.sensortag.devices";
+
+        public static final String SENSOR_TAG_DEVICE = "sensortag_device";
+        public static final String SENSOR_TAG_INFO = "sensortag_info";
     }
 
     //ContentProvider query indexes
-    // private static final int SENSOR_TAG = 1;
-    // private static final int SENSOR_TAG_ID = 2;
-    private static final int SENSOR_TAG = 1;
-    private static final int SENSOR_TAG_ID = 2;
+    private static final int SENSORTAG_DATA = 1;
+    private static final int SENSORTAG_DATA_ID = 2;
+    private static final int SENSORTAG_DEVICES = 3;
+    private static final int SENSORTAG_DEVICES_ID = 4;
 
     /**
      * Database stored in external folder: /AWARE/plugin_sensortag.db
@@ -82,32 +83,42 @@ public class Provider extends ContentProvider {
      * Database tables:<br/>
      * - plugin_phone_usage
      */
-    public static final String[] DATABASE_TABLES = {"plugin_sensortag"};
+    public static final String[] DATABASE_TABLES = {"sensortag_data", "sensortag_devices"};
+
+    private static final String DB_TBL_SENSOR_TAG =
+            SensorTag_Data._ID + " integer primary key autoincrement," +
+                    SensorTag_Data.TIMESTAMP + " real default 0," +
+                    SensorTag_Data.DEVICE_ID + " text default ''," +
+                    SensorTag_Data.SENSOR_TAG_SENSOR + " text default ''," +
+                    SensorTag_Data.SENSOR_TAG_DATA + " text default ''";
+
+    private static final String DB_TBL_SENSOR_TAG_DEVICES =
+            SensorTag_Devices._ID + " integer primary key autoincrement," +
+                    SensorTag_Devices.TIMESTAMP + " real default 0," +
+                    SensorTag_Devices.DEVICE_ID + " text default ''," +
+                    SensorTag_Devices.SENSOR_TAG_DEVICE + " text default '',"+
+                    SensorTag_Devices.SENSOR_TAG_INFO + " text default ''";
 
     /**
      * Database table fields
      */
     public static final String[] TABLES_FIELDS = {
-            Sensor_Data._ID + " integer primary key autoincrement," +
-                    Sensor_Data.TIMESTAMP + " real default 0," +
-                    Sensor_Data.DEVICE_ID + " text default ''," +
-                    Sensor_Data.UPDATE_PERIOD + " text default ''," +
-                    Sensor_Data.SENSOR + " text default ''," +
-                    Sensor_Data.VALUE + " real default 0," +
-                    Sensor_Data.UNIT + " text default '' "
+            DB_TBL_SENSOR_TAG,
+            DB_TBL_SENSOR_TAG_DEVICES
     };
 
     private static UriMatcher sUriMatcher = null;
     private static HashMap<String, String> sensorDataHash = null;
+    private static HashMap<String, String> sensorDevicesHash = null;
     private DatabaseHelper dbHelper;
     private static SQLiteDatabase database;
 
     /**
      * Returns the provider authority that is dynamic
+     *
      * @return
      */
     public static String getAuthority(Context context) {
-        Log.i("AUTHORITY", context.getPackageName());
         AUTHORITY = context.getPackageName() + ".provider.sensortag";
         return AUTHORITY;
     }
@@ -127,8 +138,11 @@ public class Provider extends ContentProvider {
 
         int count;
         switch (sUriMatcher.match(uri)) {
-            case SENSOR_TAG:
+            case SENSORTAG_DATA:
                 count = database.delete(DATABASE_TABLES[0], selection, selectionArgs);
+                break;
+            case SENSORTAG_DEVICES:
+                count = database.delete(DATABASE_TABLES[1], selection, selectionArgs);
                 break;
             default:
                 database.endTransaction();
@@ -143,10 +157,14 @@ public class Provider extends ContentProvider {
     @Override
     public String getType(Uri uri) {
         switch (sUriMatcher.match(uri)) {
-            case SENSOR_TAG:
-                return Sensor_Data.CONTENT_TYPE;
-            case SENSOR_TAG_ID:
-                return Sensor_Data.CONTENT_ITEM_TYPE;
+            case SENSORTAG_DATA:
+                return SensorTag_Data.CONTENT_TYPE;
+            case SENSORTAG_DATA_ID:
+                return SensorTag_Data.CONTENT_ITEM_TYPE;
+            case SENSORTAG_DEVICES:
+                return SensorTag_Devices.CONTENT_TYPE;
+            case SENSORTAG_DEVICES_ID:
+                return SensorTag_Devices.CONTENT_ITEM_TYPE;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
@@ -161,14 +179,27 @@ public class Provider extends ContentProvider {
         database.beginTransaction();
 
         switch (sUriMatcher.match(uri)) {
-            case SENSOR_TAG:
+            case SENSORTAG_DATA:
                 long _id = database.insertWithOnConflict(DATABASE_TABLES[0],
-                        Sensor_Data.DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
+                        SensorTag_Data.DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
                 database.setTransactionSuccessful();
                 database.endTransaction();
                 if (_id > 0) {
                     Uri dataUri = ContentUris.withAppendedId(
-                            Sensor_Data.CONTENT_URI, _id);
+                            SensorTag_Data.CONTENT_URI, _id);
+                    getContext().getContentResolver().notifyChange(dataUri, null);
+                    return dataUri;
+                }
+                database.endTransaction();
+                throw new SQLException("Failed to insert row into " + uri);
+            case SENSORTAG_DEVICES:
+                long sensor_id = database.insertWithOnConflict(DATABASE_TABLES[1],
+                        SensorTag_Devices.DEVICE_ID, values, SQLiteDatabase.CONFLICT_IGNORE);
+                database.setTransactionSuccessful();
+                database.endTransaction();
+                if (sensor_id > 0) {
+                    Uri dataUri = ContentUris.withAppendedId(
+                            SensorTag_Devices.CONTENT_URI, sensor_id);
                     getContext().getContentResolver().notifyChange(dataUri, null);
                     return dataUri;
                 }
@@ -186,17 +217,25 @@ public class Provider extends ContentProvider {
         AUTHORITY = getContext().getPackageName() + ".provider.sensortag";
 
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0], SENSOR_TAG); //URI for all records
-        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0] + "/#", SENSOR_TAG_ID); //URI for a single record
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0], SENSORTAG_DATA); //URI for all records
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[0] + "/#", SENSORTAG_DATA_ID); //URI for a single record
+
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[1], SENSORTAG_DEVICES); //URI for all records
+        sUriMatcher.addURI(AUTHORITY, DATABASE_TABLES[1] + "/#", SENSORTAG_DEVICES_ID); //URI for a single record
 
         sensorDataHash = new HashMap<>();
-        sensorDataHash.put(Sensor_Data._ID, Sensor_Data._ID);
-        sensorDataHash.put(Sensor_Data.TIMESTAMP, Sensor_Data.TIMESTAMP);
-        sensorDataHash.put(Sensor_Data.DEVICE_ID, Sensor_Data.DEVICE_ID);
-        sensorDataHash.put(Sensor_Data.UPDATE_PERIOD, Sensor_Data.UPDATE_PERIOD);
-        sensorDataHash.put(Sensor_Data.SENSOR, Sensor_Data.SENSOR);
-        sensorDataHash.put(Sensor_Data.VALUE, Sensor_Data.VALUE);
-        sensorDataHash.put(Sensor_Data.UNIT, Sensor_Data.UNIT);
+        sensorDataHash.put(SensorTag_Data._ID, SensorTag_Data._ID);
+        sensorDataHash.put(SensorTag_Data.TIMESTAMP, SensorTag_Data.TIMESTAMP);
+        sensorDataHash.put(SensorTag_Data.DEVICE_ID, SensorTag_Data.DEVICE_ID);
+        sensorDataHash.put(SensorTag_Data.SENSOR_TAG_SENSOR, SensorTag_Data.SENSOR_TAG_SENSOR);
+        sensorDataHash.put(SensorTag_Data.SENSOR_TAG_DATA, SensorTag_Data.SENSOR_TAG_DATA);
+
+        sensorDevicesHash = new HashMap<>();
+        sensorDevicesHash.put(SensorTag_Devices._ID, SensorTag_Devices._ID);
+        sensorDevicesHash.put(SensorTag_Devices.TIMESTAMP, SensorTag_Devices.TIMESTAMP);
+        sensorDevicesHash.put(SensorTag_Devices.DEVICE_ID, SensorTag_Devices.DEVICE_ID);
+        sensorDevicesHash.put(SensorTag_Devices.SENSOR_TAG_DEVICE, SensorTag_Devices.SENSOR_TAG_DEVICE);
+        sensorDevicesHash.put(SensorTag_Devices.SENSOR_TAG_INFO, SensorTag_Devices.SENSOR_TAG_INFO);
 
         return true;
     }
@@ -208,9 +247,13 @@ public class Provider extends ContentProvider {
 
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         switch (sUriMatcher.match(uri)) {
-            case SENSOR_TAG:
+            case SENSORTAG_DATA:
                 qb.setTables(DATABASE_TABLES[0]);
                 qb.setProjectionMap(sensorDataHash);
+                break;
+            case SENSORTAG_DEVICES:
+                qb.setTables(DATABASE_TABLES[1]);
+                qb.setProjectionMap(sensorDevicesHash);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown URI " + uri);
@@ -235,8 +278,12 @@ public class Provider extends ContentProvider {
 
         int count;
         switch (sUriMatcher.match(uri)) {
-            case SENSOR_TAG:
+            case SENSORTAG_DATA:
                 count = database.update(DATABASE_TABLES[0], values, selection,
+                        selectionArgs);
+                break;
+            case SENSORTAG_DEVICES:
+                count = database.update(DATABASE_TABLES[1], values, selection,
                         selectionArgs);
                 break;
             default:
