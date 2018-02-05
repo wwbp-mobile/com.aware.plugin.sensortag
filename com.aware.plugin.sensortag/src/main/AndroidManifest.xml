@@ -32,6 +32,7 @@
             android:exported="true"
             android:label="@string/plugin_sensortag"
             android:readPermission="com.aware.READ_CONTEXT_DATA"
+            android:syncable="true"
             android:writePermission="com.aware.WRITE_CONTEXT_DATA" />
 
         <activity
@@ -52,7 +53,7 @@
             </intent-filter>
             <meta-data
                 android:name="android.content.SyncAdapter"
-                android:resource="@xml/sync_device_usage" />
+                android:resource="@xml/sync_sensortag" />
         </service>
 
     </application>
