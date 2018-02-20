@@ -65,7 +65,7 @@ public class Plugin extends Aware_Plugin {
             if (Aware.getSetting(getApplicationContext(), Settings.FREQUENCY_PLUGIN_SENSORTAG).length() == 0)
                 Aware.setSetting(getApplicationContext(), Settings.FREQUENCY_PLUGIN_SENSORTAG, "30");
 
-            if (!Aware.isSyncEnabled(this, Provider.getAuthority(this)) && Aware.isStudy(this)) {
+            if (Aware.isStudy(this)) {
                 Account aware_account = Aware.getAWAREAccount(getApplicationContext());
                 String authority = Provider.getAuthority(getApplicationContext());
                 long frequency = Long.parseLong(Aware.getSetting(this, Aware_Preferences.FREQUENCY_WEBSERVICE)) * 60;
@@ -73,7 +73,7 @@ public class Plugin extends Aware_Plugin {
                 ContentResolver.setIsSyncable(aware_account, authority, 1);
                 ContentResolver.setSyncAutomatically(aware_account, authority, true);
                 SyncRequest request = new SyncRequest.Builder()
-                        .syncPeriodic(frequency, frequency/3)
+                        .syncPeriodic(frequency, frequency / 3)
                         .setSyncAdapter(aware_account, authority)
                         .setExtras(new Bundle()).build();
                 ContentResolver.requestSync(request);
@@ -101,7 +101,7 @@ public class Plugin extends Aware_Plugin {
     }
 
     public static void saveSmartTag(Context context, String sensor_mac, JSONObject smartag) {
-        Cursor smartTags = context.getContentResolver().query(Provider.SensorTag_Devices.CONTENT_URI, null, Provider.SensorTag_Devices.SENSOR_TAG_DEVICE + " like '" + sensor_mac + "'", null,null);
+        Cursor smartTags = context.getContentResolver().query(Provider.SensorTag_Devices.CONTENT_URI, null, Provider.SensorTag_Devices.SENSOR_TAG_DEVICE + " like '" + sensor_mac + "'", null, null);
         if (smartTags == null || smartTags.getCount() == 0) {
             ContentValues context_data = new ContentValues();
             context_data.put(Provider.SensorTag_Devices.TIMESTAMP, System.currentTimeMillis());
@@ -150,6 +150,7 @@ public class Plugin extends Aware_Plugin {
 
     /**
      * Assign observer from application
+     *
      * @param observer
      */
     public static void setSensorObserver(AWARESensorObserver observer) {
@@ -158,6 +159,7 @@ public class Plugin extends Aware_Plugin {
 
     /**
      * Return assigned observer
+     *
      * @return
      */
     public static AWARESensorObserver getSensorObserver() {
@@ -169,14 +171,22 @@ public class Plugin extends Aware_Plugin {
      */
     public interface AWARESensorObserver {
         void onAccelerometerChanged(ContentValues data);
+
         void onGyroscopeChanged(ContentValues data);
+
         void onHumidityChanged(ContentValues data);
+
         void onAmbientTemperatureChanged(ContentValues data);
+
         void onTargetTemperatureChanged(ContentValues data);
+
         void onLightChanged(ContentValues data);
+
         void onBarometerChanged(ContentValues data);
+
         /**
          * SmartTag device paired
+         *
          * @param data
          */
         void onSmartTagChanged(ContentValues data);
@@ -186,14 +196,13 @@ public class Plugin extends Aware_Plugin {
     public void onDestroy() {
         super.onDestroy();
 
-        if (Aware.isSyncEnabled(this, Provider.getAuthority(this))) {
-            ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);
-            ContentResolver.removePeriodicSync(
-                    Aware.getAWAREAccount(this),
-                    Provider.getAuthority(this),
-                    Bundle.EMPTY
-            );
-        }
+
+        ContentResolver.setSyncAutomatically(Aware.getAWAREAccount(this), Provider.getAuthority(this), false);
+        ContentResolver.removePeriodicSync(
+                Aware.getAWAREAccount(this),
+                Provider.getAuthority(this),
+                Bundle.EMPTY
+        );
 
         Aware.setSetting(this, Settings.STATUS_PLUGIN_SENSORTAG, false);
         Aware.stopAWARE(this);
