@@ -1,20 +1,14 @@
 AWARE Plugin: SensorTag
 ==========================
 
-This plugin receives data from the TI SensorTag.
+[![Release](https://jitpack.io/v/IAM-lab/smarttag-aware.svg)](https://jitpack.io/#IAM-lab/smarttag-aware)
+
+This plugin receives data from the Texas Instruments SensorTag.
 
 # Settings
 Parameters adjustable on the dashboard and client:
-- **status_plugin_collection_frequency**: (integer) Data Collection Frequency (Default 10Hz)
-
-# Broadcasts
-**ACTION_AWARE_PLUGIN_SENSORTAG**
-
-Broadcast as sessions toggle between usage-not usage, with the following extras:
-- **Sensor Name**: The sensor data was received from.
-- **Update Period**: The frequency.
-- **Unit**: The unit of the reading.
-- **Value**: The value obtained.
+- **status_plugin_sensortag**: (boolean) enable/disable plugin
+- **frequency_plugin_sensortag**: (integer) Data Collection Frequency (Default 10Hz)
 
 # Providers
 ##  Device Usage Data
