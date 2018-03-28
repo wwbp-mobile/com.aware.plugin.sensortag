@@ -1,9 +1,9 @@
 AWARE Plugin: SensorTag
 ==========================
 
-[![Release](https://jitpack.io/v/IAM-lab/smarttag-aware.svg)](https://jitpack.io/#IAM-lab/smarttag-aware)
+[![Release](https://jitpack.io/v/denzilferreira/com.aware.plugin.sensortag.svg)](https://jitpack.io/#denzilferreira/com.aware.plugin.sensortag)
 
-This plugin receives data from the Texas Instruments SensorTag.
+This plugin receives data from the Texas Instruments' SensorTag.
 
 # Settings
 Parameters adjustable on the dashboard and client:
