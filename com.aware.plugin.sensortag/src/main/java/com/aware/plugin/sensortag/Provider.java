@@ -150,7 +150,7 @@ public class Provider extends ContentProvider {
         }
         database.setTransactionSuccessful();
         database.endTransaction();
-        getContext().getContentResolver().notifyChange(uri, null);
+        getContext().getContentResolver().notifyChange(uri, null, false);
         return count;
     }
 
@@ -187,7 +187,7 @@ public class Provider extends ContentProvider {
                 if (_id > 0) {
                     Uri dataUri = ContentUris.withAppendedId(
                             SensorTag_Data.CONTENT_URI, _id);
-                    getContext().getContentResolver().notifyChange(dataUri, null);
+                    getContext().getContentResolver().notifyChange(dataUri, null, false);
                     return dataUri;
                 }
                 database.endTransaction();
@@ -200,7 +200,7 @@ public class Provider extends ContentProvider {
                 if (sensor_id > 0) {
                     Uri dataUri = ContentUris.withAppendedId(
                             SensorTag_Devices.CONTENT_URI, sensor_id);
-                    getContext().getContentResolver().notifyChange(dataUri, null);
+                    getContext().getContentResolver().notifyChange(dataUri, null, false);
                     return dataUri;
                 }
                 database.endTransaction();
@@ -213,7 +213,6 @@ public class Provider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        Log.i("Package name", getContext().getPackageName().toString());
         AUTHORITY = getContext().getPackageName() + ".provider.sensortag";
 
         sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
@@ -292,7 +291,7 @@ public class Provider extends ContentProvider {
         }
         database.setTransactionSuccessful();
         database.endTransaction();
-        getContext().getContentResolver().notifyChange(uri, null);
+        getContext().getContentResolver().notifyChange(uri, null, false);
         return count;
     }
 }

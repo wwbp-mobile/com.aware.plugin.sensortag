@@ -6,10 +6,12 @@ android {
 
     defaultConfig {
         applicationId 'com.aware.plugin.sensortag'
-        minSdkVersion 18 //this plugin requires Android 4.3+ (BLE support)
+        minSdkVersion minimum_sdk
         targetSdkVersion target_sdk
         versionCode version_code
         versionName version_readable
+
+        resValue "string", "provider_sensortag", android.defaultConfig.applicationId + ".provider.sensortag"
     }
     signingConfigs {
         release
@@ -24,7 +26,6 @@ android {
     lintOptions {
         abortOnError false
     }
-    buildToolsVersion '26.0.2'
 }
 
 if (System.getenv("storeFile") != null && System.getenv("storePassword") != null && System.getenv("keyAlias") != null && System.getenv("keyPassword") != null) {
@@ -38,7 +39,7 @@ if (System.getenv("storeFile") != null && System.getenv("storePassword") != null
 }
 
 repositories {
-    maven { url "https://jitpack.io" } //MPAndroidChart, AWARE
+    maven { url "https://jitpack.io" }
 }
 
 configurations.all {
@@ -46,12 +47,5 @@ configurations.all {
 }
 
 dependencies {
-    //AWARE dependencies
-    implementation "com.android.support:appcompat-v7:$support_libs"
-    implementation "com.android.support:gridlayout-v7:$support_libs"
-    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:$mqtt_libs"
-    implementation "com.koushikdutta.ion:ion:$ion_libs"
-
-    //AWARE core library
     api "com.github.denzilferreira:aware-client:$aware_libs"
 }

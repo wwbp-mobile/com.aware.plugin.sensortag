@@ -5,10 +5,12 @@ android {
     buildToolsVersion build_tools
 
     defaultConfig {
-        minSdkVersion 18 //Android 4.3 BLE support
+        minSdkVersion minimum_sdk
         targetSdkVersion target_sdk
         versionCode version_code
         versionName version_readable
+
+        resValue "string", "provider_sensortag", "com.aware.plugin.sensortag.provider.sensortag"
     }
     signingConfigs {
         release
@@ -22,6 +24,14 @@ android {
     }
     lintOptions {
         abortOnError false
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += '../com.aware.plugin.sensortag/src/main/java'
+            res.srcDirs += '../com.aware.plugin.sensortag/src/main/res'
+            manifest.srcFile '../com.aware.plugin.sensortag/src/main/AndroidManifest.xml'
+        }
     }
 }
 
@@ -67,12 +77,5 @@ repositories {
 }
 
 dependencies {
-    //AWARE dependencies
-    implementation "com.android.support:appcompat-v7:$support_libs"
-    implementation "com.android.support:gridlayout-v7:$support_libs"
-    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:$mqtt_libs"
-    implementation "com.koushikdutta.ion:ion:$ion_libs"
-
-    //AWARE core library
     api "com.github.denzilferreira:aware-client:$aware_libs"
 }
