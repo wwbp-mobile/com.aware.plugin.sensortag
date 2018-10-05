@@ -80,8 +80,6 @@ public class Plugin extends Aware_Plugin {
             }
 
             pairSmartTags();
-
-            Aware.startAWARE(this);
         }
         return START_STICKY;
     }
@@ -205,6 +203,5 @@ public class Plugin extends Aware_Plugin {
         );
 
         Aware.setSetting(this, Settings.STATUS_PLUGIN_SENSORTAG, false);
-        Aware.stopAWARE(this);
     }
 }
