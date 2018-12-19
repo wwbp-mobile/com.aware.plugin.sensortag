@@ -71,7 +71,7 @@ public class DevicePicker extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this, "Low Energy Bluetooth service not supported", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Bluetooth Low Energy not supported on this device :(", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -110,7 +110,7 @@ public class DevicePicker extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
-            Intent enableBluetoothIntent = new Intent((mBluetoothAdapter.ACTION_REQUEST_ENABLE));
+            Intent enableBluetoothIntent = new Intent((BluetoothAdapter.ACTION_REQUEST_ENABLE));
             startActivityForResult(enableBluetoothIntent, REQUEST_ENABLE_BT);
         } else {
             if (Build.VERSION.SDK_INT >= 21) {
