@@ -9,8 +9,9 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
 import com.aware.Aware;
+import com.aware.ui.AppCompatPreferenceActivity;
 
-public class Settings extends PreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class Settings extends AppCompatPreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     /**
      * State of this plugin

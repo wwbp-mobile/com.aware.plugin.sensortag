@@ -20,6 +20,7 @@
 
         <activity
                 android:name="com.aware.plugin.sensortag.Settings"
+                android:label="AWARE: TI SensorTag"
                 android:exported="true"/>
 
         <provider
