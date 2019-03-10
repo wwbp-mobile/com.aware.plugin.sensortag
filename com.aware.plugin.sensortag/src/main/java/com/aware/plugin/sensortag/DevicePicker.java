@@ -175,13 +175,13 @@ public class DevicePicker extends AppCompatActivity {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-            BluetoothDevice bleDevice = result.getDevice();
-            if (bleDevice.getType() == BluetoothDevice.DEVICE_TYPE_LE
-                    && !(mDeviceList.contains(bleDevice))
-                    && (bleDevice.getName().contains("SensorTag"))) {
 
-                mDeviceList.add(bleDevice);
-                addToView(bleDevice);
+            if (result != null && result.getDevice() != null) {
+                BluetoothDevice bleDevice = result.getDevice();
+                if (bleDevice.getName() != null && bleDevice.getType() == BluetoothDevice.DEVICE_TYPE_LE && !mDeviceList.contains(bleDevice) && (bleDevice.getName().contains("SensorTag"))) {
+                    mDeviceList.add(bleDevice);
+                    addToView(bleDevice);
+                }
             }
         }
 
