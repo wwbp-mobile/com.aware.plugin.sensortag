@@ -56,11 +56,18 @@ public class Plugin extends Aware_Plugin {
 
         if (PERMISSIONS_OK) {
 
-            DEVICE_ID = Aware.getSetting(this, Aware_Preferences.DEVICE_ID);
-
             DEBUG = Aware.getSetting(this, Aware_Preferences.DEBUG_FLAG).equals("true");
 
-            Aware.setSetting(this, Settings.STATUS_PLUGIN_SENSORTAG, true);
+            if (Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_SENSORTAG).length() == 0) {
+                Aware.setSetting(getApplicationContext(), Settings.STATUS_PLUGIN_SENSORTAG, true);
+            } else {
+                if (Aware.getSetting(getApplicationContext(), Settings.STATUS_PLUGIN_SENSORTAG).equalsIgnoreCase("false")) {
+                    Aware.stopPlugin(getApplicationContext(), getPackageName());
+                    return START_STICKY;
+                }
+            }
+
+            DEVICE_ID = Aware.getSetting(this, Aware_Preferences.DEVICE_ID);
 
             if (Aware.getSetting(getApplicationContext(), Settings.FREQUENCY_PLUGIN_SENSORTAG).length() == 0)
                 Aware.setSetting(getApplicationContext(), Settings.FREQUENCY_PLUGIN_SENSORTAG, "30");
