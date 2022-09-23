@@ -34,9 +34,9 @@ public class Plugin extends Aware_Plugin {
 
         TAG = "AWARE::Sensor Tag";
 
-        REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH);
-        REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH_ADMIN);
+        //REQUIRED_PERMISSIONS.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        //REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH);
+        //REQUIRED_PERMISSIONS.add(Manifest.permission.BLUETOOTH_ADMIN);
     }
 
     @Override
